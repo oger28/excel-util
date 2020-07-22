@@ -44,7 +44,7 @@ public class StudentController {
     }
 
     /**
-     *  在一个 sheet 中有多张表
+     *  多sheet 导出
      */
     @GetMapping("/exportStudentsAndTeachers")
     @ApiOperation(value = "导出学生和老师")
@@ -73,7 +73,7 @@ public class StudentController {
     }
 
     /**
-     *  多sheet 导出
+     *  在一个 sheet 中有多张表
      */
     @GetMapping("/exportStudentsAndTeachers2")
     @ApiOperation(value = "导出学生和老师2")
