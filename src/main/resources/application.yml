@@ -1,0 +1,6 @@
+server:
+  port: 8270
+
+spring:
+  application:
+    name: excelutil
