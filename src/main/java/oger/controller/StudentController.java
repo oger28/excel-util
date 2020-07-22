@@ -29,6 +29,9 @@ import java.util.Map;
 @RequestMapping("/student")
 public class StudentController {
 
+    /**
+     * 单sheet单表模式，调用一个方法即可实现导出
+     */
     @GetMapping("/exportStudents")
     @ApiOperation(value = "导出学生")
     @ResponseBody
@@ -40,6 +43,9 @@ public class StudentController {
         ExcelExportUtil.exportExcel(fileName, headMap, getStudents(), response);
     }
 
+    /**
+     *  在一个 sheet 中有多张表
+     */
     @GetMapping("/exportStudentsAndTeachers")
     @ApiOperation(value = "导出学生和老师")
     @ResponseBody
@@ -66,6 +72,9 @@ public class StudentController {
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
+    /**
+     *  多sheet 导出
+     */
     @GetMapping("/exportStudentsAndTeachers2")
     @ApiOperation(value = "导出学生和老师2")
     @ResponseBody
