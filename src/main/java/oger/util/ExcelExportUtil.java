@@ -74,26 +74,26 @@ public class ExcelExportUtil {
     public static void exportExcel(String fileName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(fileName);
-        ExcelExportUtil.exportTable(0, fileName, headMap, dataset, sheet, workbook);
+        ExcelExportUtil.createTable(0, fileName, headMap, dataset, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
     public static void exportExcel(String fileName, String sheetName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(sheetName);
-        ExcelExportUtil.exportTable(0, sheetName, headMap, dataset, sheet, workbook);
+        ExcelExportUtil.createTable(0, sheetName, headMap, dataset, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
     public static void exportExcel(String fileName, String sheetName, String tableName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(sheetName);
-        ExcelExportUtil.exportTable(0, tableName, headMap, dataset, sheet, workbook);
+        ExcelExportUtil.createTable(0, tableName, headMap, dataset, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
-    public static int exportTable(String tableName, Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
-        return exportTable(0, tableName, headMap, dataset, sheet, workbook);
+    public static int createTable(String tableName, Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+        return createTable(0, tableName, headMap, dataset, sheet, workbook);
     }
 
     /**
@@ -105,7 +105,7 @@ public class ExcelExportUtil {
      * @param workbook
      * @return 结束行
      */
-    public static int exportTable(int line, String tableName, Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+    public static int createTable(int line, String tableName, Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         String[] fieldNames = new String[headMap.size()];
         String[] headNames = new String[headMap.size()];
         int i = 0;
@@ -115,7 +115,7 @@ public class ExcelExportUtil {
             i++;
         }
         line = createTableHead(line, tableName, headNames, sheet, workbook);
-        return exportTableData(line, sheet, fieldNames, dataset);
+        return createTableBody(line, sheet, fieldNames, dataset);
     }
 
     public static int createTableHead(int line, String tableName, String[] headNames, Sheet sheet, HSSFWorkbook workbook) {
@@ -144,7 +144,7 @@ public class ExcelExportUtil {
      * @param dataset
      * @return 结束行
      */
-    public static int exportTableData(int line, Sheet sheet, String[] fieldNames, Collection dataset) {
+    public static int createTableBody(int line, Sheet sheet, String[] fieldNames, Collection dataset) {
         Iterator it = dataset.iterator();
         Object rowData;
         String fieldName;
@@ -185,8 +185,7 @@ public class ExcelExportUtil {
         return ++line;
     }
 
-    public static Sheet createSheet(String fileName, String sheetName, HSSFWorkbook workbook) {
-        Sheet sheet = workbook.createSheet(sheetName);
+    public static int createSheetTitle(String fileName, Sheet sheet, HSSFWorkbook workbook) {
         Row row = sheet.createRow(0);
         Cell cell = row.createCell(0);
         cell.setCellValue(fileName);
@@ -194,7 +193,18 @@ public class ExcelExportUtil {
         cell.setCellStyle(sheetHeadCellStyle);
         //标题 2行 22列 可视具体情况修改，亦可重构方法传参动态设置列数
         sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, 22));//起始行号，终止行号， 起始列号，终止列号
-        return sheet;
+        return 2;
+    }
+
+    public static int createSheetTitle(int line, String fileName, Sheet sheet, HSSFWorkbook workbook) {
+        Row row = sheet.createRow(line);
+        Cell cell = row.createCell(0);
+        cell.setCellValue(fileName);
+        CellStyle sheetHeadCellStyle = ExcelExportUtil.getSheetHeadCellStyle(workbook);
+        cell.setCellStyle(sheetHeadCellStyle);
+        //标题 2行 22列 可视具体情况修改，亦可重构方法传参动态设置列数
+        sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, 22));//起始行号，终止行号， 起始列号，终止列号
+        return line + 2;
     }
 
     /*  请不要修改样式，尽量使用默认样式  */

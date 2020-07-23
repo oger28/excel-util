@@ -39,12 +39,12 @@ public class StudentController {
         String fileName = "学生列表";
         Map<String, String> headMap = new LinkedHashMap<>();
         headMap.put("name", "姓名");
-        headMap.put("borthDate", "生日");
+        headMap.put("birthday", "生日");
         ExcelExportUtil.exportExcel(fileName, headMap, getStudents(), response);
     }
 
     /**
-     *  多sheet 导出
+     * 多sheet 导出
      */
     @GetMapping("/exportStudentsAndTeachers")
     @ApiOperation(value = "导出学生和老师")
@@ -59,7 +59,7 @@ public class StudentController {
         String sheetName = "学生列表";
         String tableName = "学生列表";
         Sheet sheet1 = workbook.createSheet(sheetName);
-        ExcelExportUtil.exportTable(tableName, headMap, getStudents(), sheet1, workbook);
+        ExcelExportUtil.createTable(tableName, headMap, getStudents(), sheet1, workbook);
 
         sheetName = "教师列表";
         tableName = "教师列表";
@@ -67,13 +67,13 @@ public class StudentController {
         headMap.put("name", "姓名");
         headMap.put("subject", "科目");
         Sheet sheet2 = workbook.createSheet(sheetName);
-        ExcelExportUtil.exportTable(tableName, headMap, getTeachers(), sheet2, workbook);
+        ExcelExportUtil.createTable(tableName, headMap, getTeachers(), sheet2, workbook);
 
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
     /**
-     *  在一个 sheet 中有多张表
+     * 在一个 sheet 中有多张表
      */
     @GetMapping("/exportStudentsAndTeachers2")
     @ApiOperation(value = "导出学生和老师2")
@@ -82,18 +82,19 @@ public class StudentController {
         HSSFWorkbook workbook = new HSSFWorkbook();
         String fileName = "学生和老师列表";
         String sheetName = "学生和老师列表";
+        Sheet sheet = workbook.createSheet(sheetName);
         Map<String, String> headMap = new LinkedHashMap<>();
         headMap.put("name", "姓名");
         headMap.put("birthday", "生日");
         String tableName = "学生列表";
-        Sheet sheet = ExcelExportUtil.createSheet(fileName, sheetName, workbook);
-        int line = ExcelExportUtil.exportTable(tableName, headMap, getStudents(), sheet, workbook);
+        int line = ExcelExportUtil.createSheetTitle(fileName, sheet, workbook);
+        line = ExcelExportUtil.createTable(line, tableName, headMap, getStudents(), sheet, workbook);
 
         tableName = "教师列表";
         headMap = new LinkedHashMap<>();
         headMap.put("name", "姓名");
         headMap.put("subject", "科目");
-        ExcelExportUtil.exportTable(line, tableName, headMap, getTeachers(), sheet, workbook);
+        ExcelExportUtil.createTable(line, tableName, headMap, getTeachers(), sheet, workbook);
 
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
