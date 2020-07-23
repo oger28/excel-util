@@ -72,17 +72,7 @@ public class ExcelExportUtil {
     }
 
     public static void exportExcel(String fileName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
-        HSSFWorkbook workbook = new HSSFWorkbook();
-        HSSFSheet sheet = workbook.createSheet(fileName);
-        ExcelExportUtil.createTable(0, fileName, headMap, dataset, sheet, workbook);
-        ExcelExportUtil.exportExcel(fileName, workbook, response);
-    }
-
-    public static void exportExcel(String fileName, String sheetName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
-        HSSFWorkbook workbook = new HSSFWorkbook();
-        HSSFSheet sheet = workbook.createSheet(sheetName);
-        ExcelExportUtil.createTable(0, sheetName, headMap, dataset, sheet, workbook);
-        ExcelExportUtil.exportExcel(fileName, workbook, response);
+        exportExcel(fileName, fileName, fileName, headMap, dataset, response);
     }
 
     public static void exportExcel(String fileName, String sheetName, String tableName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
