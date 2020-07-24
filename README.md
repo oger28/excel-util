@@ -9,6 +9,8 @@
  1. 可任意创建sheet
  2. 可在任意位置创建table
  3. 可按顺序导出实体类任意字段
+    - 可通过Map<String,String> 的方式传入你想导出的字段
+    - 亦可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
  4. 亦可一次性导出单sheet单表模式的Excel
  
 ```
