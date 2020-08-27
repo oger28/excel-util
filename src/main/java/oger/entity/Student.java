@@ -22,6 +22,13 @@ public class Student {
         this.birthday = birthday;
     }
 
+    public Student(Integer id, String name, Integer chineseScore, Integer mathScore) {
+        this.id = id;
+        this.name = name;
+        this.chineseScore = chineseScore;
+        this.mathScore = mathScore;
+    }
+
     @ApiModelProperty("ID")
     private Integer id;
 
@@ -30,4 +37,10 @@ public class Student {
 
     @ApiModelProperty("生日")
     private Date birthday;
+
+    @ApiModelProperty("语文成绩")
+    private Integer chineseScore;
+
+    @ApiModelProperty("数学成绩")
+    private Integer mathScore;
 }

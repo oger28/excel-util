@@ -15,10 +15,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @Auther: Oger
@@ -35,11 +32,19 @@ import java.util.Map;
  *      可通过Map<String,String> 的方式传入你想导出的字段
  *      亦可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
  * 4. 亦可一次性导出单sheet单表模式的Excel
+ * 5. 实现二级表头合并的方式创建表
  */
 public class ExcelExportUtil {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelExportUtil.class);
 
+    /**
+     * 导出excel
+     *
+     * @param fileName
+     * @param workbook
+     * @param response
+     */
     public static void exportExcel(String fileName, HSSFWorkbook workbook, HttpServletResponse response) {
         OutputStream out = null;
         try {
@@ -73,22 +78,70 @@ public class ExcelExportUtil {
 
     }
 
-    public static void exportExcel(String fileName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
-        exportExcel(fileName, fileName, fileName, headMap, dataset, response);
-    }
-
+    /**
+     * 导出excel: 有sheet标题 有表标题
+     *
+     * @param fileName
+     * @param sheetName
+     * @param tableName
+     * @param headMap
+     * @param dataset
+     * @param response
+     */
     public static void exportExcel(String fileName, String sheetName, String tableName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(sheetName);
-        ExcelExportUtil.createTable(0, tableName, headMap, dataset, sheet, workbook);
+        int line = createSheetTitle(sheetName, sheet, workbook);
+        ExcelExportUtil.createTable(line, tableName, headMap, dataset, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
+    /**
+     * 导出excel: 无sheet标题 无表标题
+     *
+     * @param fileName
+     * @param headMap
+     * @param dataset
+     * @param response
+     */
+    public static void exportExcel(String fileName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheet = workbook.createSheet(fileName);
+        ExcelExportUtil.createTable(0, headMap, dataset, sheet, workbook);
+        ExcelExportUtil.exportExcel(fileName, workbook, response);
+    }
+
+    /**
+     * 导出excel: 二级合并表头 无sheet标题 无表标题
+     *
+     * @param fileName
+     * @param dataset
+     * @param response
+     */
+    public static void exportMergeHeadExcel(String fileName, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, HttpServletResponse response) {
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheet = workbook.createSheet(fileName);
+        ExcelExportUtil.createMergeHeadTable(0, mergeHeadMap, dataset, sheet, workbook);
+        ExcelExportUtil.exportExcel(fileName, workbook, response);
+    }
+
+    /**
+     * 创建表： 有表标题
+     *
+     * @param tableName
+     * @param headMap
+     * @param dataset
+     * @param sheet
+     * @param workbook
+     * @return
+     */
     public static int createTable(String tableName, Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         return createTable(0, tableName, headMap, dataset, sheet, workbook);
     }
 
     /**
+     * 创建表： 有表标题 从指定行开始
+     *
      * @param line      起始行
      * @param tableName
      * @param headMap   要求是LinkedHashMap类型
@@ -110,25 +163,176 @@ public class ExcelExportUtil {
         return createTableBody(line, sheet, fieldNames, dataset);
     }
 
-    public static int createTableHead(int line, String tableName, String[] headNames, Sheet sheet, HSSFWorkbook workbook) {
+    /**
+     * 创建表： 无表标题
+     *
+     * @param headMap
+     * @param dataset
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createTable(Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+        return createTable(0, headMap, dataset, sheet, workbook);
+    }
+
+    /**
+     * 创建表： 无表标题 从指定行开始
+     *
+     * @param line     起始行
+     * @param headMap  要求是LinkedHashMap类型
+     * @param dataset
+     * @param sheet
+     * @param workbook
+     * @return 下一行
+     */
+    public static int createTable(int line, Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+        String[] fieldNames = new String[headMap.size()];
+        String[] headNames = new String[headMap.size()];
+        int i = 0;
+        for (Map.Entry<String, String> entry : headMap.entrySet()) {
+            fieldNames[i] = entry.getKey();
+            headNames[i] = entry.getValue();
+            i++;
+        }
+        line = createTableHead(line, headNames, sheet, workbook);
+        return createTableBody(line, sheet, fieldNames, dataset);
+    }
+
+    /**
+     * 创建表： 二级表头合并 无表标题  从指定行开始
+     *
+     * @param line
+     * @param mergeHeadMap
+     * @param dataset
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createMergeHeadTable(int line, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+        Row row1 = sheet.createRow(line);
+        Row row2 = sheet.createRow(line + 1);
+        CellStyle tableHeaderCellStyle = ExcelExportUtil.getTableHeadCellStyle(workbook);
+        int index = 0;
+        List<String> fieldNames = new ArrayList<>();
+        for (Map.Entry<String, Map<String, String>> entry : mergeHeadMap.entrySet()) {
+            String key = entry.getKey();
+            Map<String, String> value = entry.getValue();
+            if (value.size() < 1) {
+                continue;
+            }
+            row1.createCell(index).setCellValue(key);
+            row1.getCell(index).setCellStyle(tableHeaderCellStyle);
+            if (value.size() == 1) {
+                sheet.addMergedRegion(new CellRangeAddress(line, line + 1, index, index));//起始行号，终止行号， 起始列号，终止列号
+                fieldNames.addAll(value.keySet());
+                index++;
+            } else {
+                sheet.addMergedRegion(new CellRangeAddress(line, line, index, index + value.size() - 1));//起始行号，终止行号， 起始列号，终止列号
+                for (Map.Entry<String, String> child : value.entrySet()) {
+                    row2.createCell(index).setCellValue(child.getValue());
+                    row2.getCell(index).setCellStyle(tableHeaderCellStyle);
+                    fieldNames.add(child.getKey());
+                    index++;
+                }
+            }
+        }
+        return createTableBody(line + 2, sheet, fieldNames.stream().toArray(String[]::new), dataset);
+    }
+
+    /**
+     * 创建表头： 二级表头合并 无表标题  从指定行开始
+     *
+     * @param line
+     * @param mergeHeadMap
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createMergeHead(int line, Map<String, Map<String, String>> mergeHeadMap, Sheet sheet, HSSFWorkbook workbook) {
+        Row row1 = sheet.createRow(line);
+        Row row2 = sheet.createRow(line + 1);
+        CellStyle tableHeaderCellStyle = ExcelExportUtil.getTableHeadCellStyle(workbook);
+        int index = 0;
+        for (Map.Entry<String, Map<String, String>> entry : mergeHeadMap.entrySet()) {
+            String key = entry.getKey();
+            Map<String, String> value = entry.getValue();
+            if (value.size() < 1) {
+                continue;
+            }
+            row1.createCell(index).setCellValue(key);
+            row1.getCell(index).setCellStyle(tableHeaderCellStyle);
+            if (value.size() == 1) {
+                sheet.addMergedRegion(new CellRangeAddress(line, line + 1, index, index));//起始行号，终止行号， 起始列号，终止列号
+                index++;
+            } else {
+                sheet.addMergedRegion(new CellRangeAddress(line, line, index, index + value.size() - 1));//起始行号，终止行号， 起始列号，终止列号
+                for (Map.Entry<String, String> child : value.entrySet()) {
+                    row2.createCell(index).setCellValue(child.getValue());
+                    row2.getCell(index).setCellStyle(tableHeaderCellStyle);
+                    index++;
+                }
+            }
+        }
+        return line + 2;
+    }
+
+    /**
+     * 创建表标题
+     *
+     * @param line
+     * @param tableName
+     * @param headLength
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createTableTitle(int line, String tableName, int headLength, Sheet sheet, HSSFWorkbook workbook) {
         Row row = sheet.createRow(line);
         Cell cell = row.createCell(0);
         cell.setCellValue(tableName);
         CellStyle tableTitleCellStyle = ExcelExportUtil.getTableTitleCellStyle(workbook);
         cell.setCellStyle(tableTitleCellStyle);
-        sheet.addMergedRegion(new CellRangeAddress(line, line, 0, headNames.length - 1));//起始行号，终止行号， 起始列号，终止列号
-        line++;
-        Row head1 = sheet.createRow(line);
+        sheet.addMergedRegion(new CellRangeAddress(line, line, 0, headLength - 1));//起始行号，终止行号， 起始列号，终止列号
+        return ++line;
+    }
+
+    /**
+     * 创建表头： 有表标题
+     *
+     * @param line
+     * @param tableName
+     * @param headNames
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createTableHead(int line, String tableName, String[] headNames, Sheet sheet, HSSFWorkbook workbook) {
+        line = createTableTitle(line, tableName, headNames.length, sheet, workbook);
+        return createTableHead(line, headNames, sheet, workbook);
+    }
+
+    /**
+     * 创建表头： 无表标题
+     *
+     * @param line
+     * @param headNames
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createTableHead(int line, String[] headNames, Sheet sheet, HSSFWorkbook workbook) {
+        Row head = sheet.createRow(line);
         CellStyle tableHeaderCellStyle = ExcelExportUtil.getTableHeadCellStyle(workbook);
         for (int i = 0; i < headNames.length; i++) {
-            head1.createCell(i).setCellValue(headNames[i]);
-            head1.getCell(i).setCellStyle(tableHeaderCellStyle);
+            head.createCell(i).setCellValue(headNames[i]);
+            head.getCell(i).setCellStyle(tableHeaderCellStyle);
         }
         return ++line;
     }
 
     /**
-     * fieldNames 必须与 headNames 一一对应
+     * 创建表体： fieldNames 必须与 headNames 一一对应
      *
      * @param line       起始行
      * @param sheet
@@ -177,31 +381,45 @@ public class ExcelExportUtil {
         return ++line;
     }
 
-    public static int createSheetTitle(String fileName, Sheet sheet, HSSFWorkbook workbook) {
-        Row row = sheet.createRow(0);
-        Cell cell = row.createCell(0);
-        cell.setCellValue(fileName);
-        CellStyle sheetHeadCellStyle = ExcelExportUtil.getSheetHeadCellStyle(workbook);
-        cell.setCellStyle(sheetHeadCellStyle);
-        //标题 2行 22列 可视具体情况修改，亦可重构方法传参动态设置列数
-        sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, 22));//起始行号，终止行号， 起始列号，终止列号
-        return 2;
+    /**
+     * 创建sheet标题
+     *
+     * @param sheetName
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createSheetTitle(String sheetName, Sheet sheet, HSSFWorkbook workbook) {
+        return createSheetTitle(0, sheetName, sheet, workbook);
     }
 
-    public static int createSheetTitle(int line, String fileName, Sheet sheet, HSSFWorkbook workbook) {
+    /**
+     * 创建sheet标题: 从指定行开始
+     *
+     * @param line
+     * @param sheetName
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createSheetTitle(int line, String sheetName, Sheet sheet, HSSFWorkbook workbook) {
         Row row = sheet.createRow(line);
         Cell cell = row.createCell(0);
-        cell.setCellValue(fileName);
-        CellStyle sheetHeadCellStyle = ExcelExportUtil.getSheetHeadCellStyle(workbook);
+        cell.setCellValue(sheetName);
+        CellStyle sheetHeadCellStyle = ExcelExportUtil.getSheetTitleCellStyle(workbook);
         cell.setCellStyle(sheetHeadCellStyle);
         //标题 2行 22列 可视具体情况修改，亦可重构方法传参动态设置列数
-        sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, 22));//起始行号，终止行号， 起始列号，终止列号
+        sheet.addMergedRegion(new CellRangeAddress(line, line + 1, 0, 22));//起始行号，终止行号， 起始列号，终止列号
         return line + 2;
     }
 
-    /*  请不要修改样式，尽量使用默认样式  */
-
-    private static CellStyle getSheetHeadCellStyle(HSSFWorkbook workbook) {
+    /**
+     * 获取sheet标题单元格样式
+     *
+     * @param workbook
+     * @return
+     */
+    public static CellStyle getSheetTitleCellStyle(HSSFWorkbook workbook) {
         HSSFCellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
         style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中
@@ -212,7 +430,13 @@ public class ExcelExportUtil {
         return style;
     }
 
-    private static CellStyle getTableTitleCellStyle(HSSFWorkbook workbook) {
+    /**
+     * 获取表标题单元格样式
+     *
+     * @param workbook
+     * @return
+     */
+    public static CellStyle getTableTitleCellStyle(HSSFWorkbook workbook) {
         HSSFCellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
         style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中
@@ -225,7 +449,13 @@ public class ExcelExportUtil {
         return style;
     }
 
-    private static CellStyle getTableHeadCellStyle(HSSFWorkbook workbook) {
+    /**
+     * 获取表头单元格样式
+     *
+     * @param workbook
+     * @return
+     */
+    public static CellStyle getTableHeadCellStyle(HSSFWorkbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
         style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中

@@ -99,6 +99,53 @@ public class StudentController {
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
+    /**
+     * 二级合并表头单元格
+     */
+    @GetMapping("/exportStudentScores")
+    @ApiOperation(value = "导出学生成绩表")
+    @ResponseBody
+    public void exportStudentScores(HttpServletResponse response) {
+        String fileName = "学生成绩表";
+        Map<String, Map<String, String>> mergeHeadMap = getMergeHeadMap();
+        List<Student> scores = getScores();
+        ExcelExportUtil.exportMergeHeadExcel(fileName, mergeHeadMap, scores, response);
+    }
+
+    private Map<String, Map<String, String>> getMergeHeadMap() {
+        Map<String, Map<String, String>> mergeHeadMap = new LinkedHashMap<>();
+        Map<String, String> headMap = new LinkedHashMap<>();
+        headMap.put("id", "ID");
+        mergeHeadMap.put("序号", headMap);
+
+        headMap = new LinkedHashMap<>();
+        headMap.put("name", "姓名");
+        mergeHeadMap.put("姓名", headMap);
+
+        headMap = new LinkedHashMap<>();
+        headMap.put("chineseScore", "语文");
+        headMap.put("mathScore", "数学");
+        mergeHeadMap.put("成绩", headMap);
+        return mergeHeadMap;
+    }
+
+    private List<Student> getScores() {
+        List<Student> students = new ArrayList<>();
+        try {
+            Student student = new Student(1, "张三", 99, 100);
+            students.add(student);
+            student = new Student(2, "李四", 99, 79);
+            students.add(student);
+            student = new Student(3, "王五", 80, 80);
+            students.add(student);
+            student = new Student(4, "赵六", 60, 59);
+            students.add(student);
+        } catch (Exception e) {
+            //
+        }
+        return students;
+    }
+
     private List<Student> getStudents() {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         List<Student> students = new ArrayList<>();
