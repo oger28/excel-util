@@ -26,7 +26,7 @@ import java.util.*;
  * 2. 约定大于规定原则
  * <p>
  * 优点：
- * 1. 可任意创建sheet
+ * 1. 可任意创建多个sheet
  * 2. 可在任意位置创建table
  * 3. 可按顺序导出实体类任意字段:
  *      可通过Map<String,String> 的方式传入你想导出的字段
@@ -361,8 +361,6 @@ public class ExcelExportUtil {
                     cell = row.createCell(i);
                     if (value == null) {
                         cell.setCellValue("");
-                    } else if (value instanceof Float) {
-                        cell.setCellValue(String.valueOf(value));
                     } else if (value instanceof BigDecimal) {
                         cell.setCellValue(((BigDecimal) value).doubleValue());
                     } else if (value instanceof Date) {
