@@ -1,5 +1,6 @@
 package oger.util;
 
+import org.apache.commons.codec.binary.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFFont;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -33,6 +34,7 @@ import java.util.*;
  * 亦可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
  * 4. 亦可一次性导出单sheet单表模式的Excel
  * 5. 实现二级表头合并的方式创建表
+ * 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
  */
 public class ExcelExportUtil {
 
@@ -126,6 +128,20 @@ public class ExcelExportUtil {
     }
 
     /**
+     * 导出excel: 多级合并表头 无sheet标题 无表标题
+     *
+     * @param fileName
+     * @param dataset
+     * @param response
+     */
+    public static void exportMergeHeadExcel(String fileName, List<Map<String, Object>> mergeHeads, Collection dataset, HttpServletResponse response) {
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheet = workbook.createSheet(fileName);
+        createMergeHeadTable(0, mergeHeads, dataset, sheet, workbook);
+        exportExcel(fileName, workbook, response);
+    }
+
+    /**
      * 创建表： 有表标题
      *
      * @param tableName
@@ -203,7 +219,7 @@ public class ExcelExportUtil {
      * 创建表： 二级表头合并 无表标题  从指定行开始
      *
      * @param line
-     * @param mergeHeadMap
+     * @param mergeHeadMap： 外层Map的key为第一行名称，value为子表头Map；里层Map的key为字段名，value为名称；竖向单元格合并的应在每行Map中都有；Map采用LinkedHashMap
      * @param dataset
      * @param sheet
      * @param workbook
@@ -215,6 +231,7 @@ public class ExcelExportUtil {
         CellStyle tableHeaderCellStyle = getTableHeadCellStyle(workbook);
         int index = 0;
         List<String> fieldNames = new ArrayList<>();
+        //创建表头
         for (Map.Entry<String, Map<String, String>> entry : mergeHeadMap.entrySet()) {
             String key = entry.getKey();
             Map<String, String> value = entry.getValue();
@@ -237,44 +254,78 @@ public class ExcelExportUtil {
                 }
             }
         }
+        //创建表体
         return createTableBody(line + 2, sheet, fieldNames.stream().toArray(String[]::new), dataset);
     }
 
     /**
-     * 创建二级树形表头： 单元格合并 无表标题  从指定行开始
+     * 创建表： 多级表头合并 无表标题  从指定行开始  兼容二级表头合并
      *
      * @param line
-     * @param mergeHeadMap
+     * @param mergeHeads： 表头每一行对应一个Map<String,Object>；非底行的key为名称，value为合并单元格数量；底行的key为字段名，value为名称；竖向单元格合并的应在每行Map中都有；Map采用LinkedHashMap
+     * @param dataset
      * @param sheet
      * @param workbook
      * @return
      */
-    public static int createMergeHead(int line, Map<String, Map<String, String>> mergeHeadMap, Sheet sheet, HSSFWorkbook workbook) {
-        Row row1 = sheet.createRow(line);
-        Row row2 = sheet.createRow(line + 1);
+    public static int createMergeHeadTable(int line, List<Map<String, Object>> mergeHeads, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
-        int index = 0;
-        for (Map.Entry<String, Map<String, String>> entry : mergeHeadMap.entrySet()) {
-            String key = entry.getKey();
-            Map<String, String> value = entry.getValue();
-            if (value.size() < 1) {
-                continue;
-            }
-            row1.createCell(index).setCellValue(key);
-            row1.getCell(index).setCellStyle(tableHeadCellStyle);
-            if (value.size() == 1) {
-                sheet.addMergedRegion(new CellRangeAddress(line, line + 1, index, index));//起始行号，终止行号， 起始列号，终止列号
-                index++;
-            } else {
-                sheet.addMergedRegion(new CellRangeAddress(line, line, index, index + value.size() - 1));//起始行号，终止行号， 起始列号，终止列号
-                for (Map.Entry<String, String> child : value.entrySet()) {
-                    row2.createCell(index).setCellValue(child.getValue());
-                    row2.getCell(index).setCellStyle(tableHeadCellStyle);
+        int rows = mergeHeads.size();
+        Map<String, Object> lastHeadMap = mergeHeads.get(rows - 1);
+        int cols = lastHeadMap.size();
+        String[][] heads = new String[rows][cols];
+        String[] fieldNames = new String[cols];
+        //创建表头二维数组
+        for (int i = 0; i < rows; i++) {
+            heads[i] = new String[cols];
+            Map<String, Object> mergeHeadMap = mergeHeads.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
+                if (entry.getValue() instanceof Integer) {
+                    Integer value = Integer.valueOf(entry.getValue().toString());
+                    while (value > 0) {
+                        heads[i][index] = entry.getKey();
+                        value--;
+                        index++;
+                    }
+                } else if (entry.getValue() instanceof String) {
+                    heads[i][index] = entry.getValue().toString();
+                    fieldNames[index] = entry.getKey();
                     index++;
                 }
             }
         }
-        return line + 2;
+        //创建表头
+        for (int i = 0; i < rows; i++) {
+            Row row = sheet.createRow(line + i);
+            Map<String, Object> mergeHeadMap = mergeHeads.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
+                if (i > 0 && StringUtils.equals(heads[i - 1][index], heads[i][index])) {
+                    index++;
+                    continue;
+                }
+                if (entry.getValue() instanceof Integer) {
+                    Integer value = Integer.valueOf(entry.getValue().toString());
+                    row.createCell(index).setCellValue(entry.getKey());
+                    row.getCell(index).setCellStyle(tableHeadCellStyle);
+                    int lastRow = i;
+                    while (lastRow < rows - 1 && StringUtils.equals(heads[lastRow][index], heads[lastRow + 1][index])) {
+                        lastRow++;
+                    }
+                    if (lastRow > i || value > 1) {
+                        sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                    }
+                    index += value;
+                } else if (entry.getValue() instanceof String) {
+                    row.createCell(index).setCellValue(entry.getValue().toString());
+                    row.getCell(index).setCellStyle(tableHeadCellStyle);
+                    index++;
+                }
+            }
+        }
+        //创建表体
+        return createTableBody(line + rows, sheet, fieldNames, dataset);
     }
 
     /**

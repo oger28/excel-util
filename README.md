@@ -16,6 +16,7 @@ Excel导出工具类
     - 亦可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
  4. 亦可一次性导出单sheet单表模式的Excel
  5. 实现二级表头合并的方式创建表
+ 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
  
 ```
    /**
@@ -99,6 +100,41 @@ Excel导出工具类
            Map<String, Map<String, String>> mergeHeadMap = getMergeHeadMap();
            List<Student> scores = getScores();
            ExcelExportUtil.exportMergeHeadExcel(fileName, mergeHeadMap, scores, response);
+       }
+       
+       /**
+        * 多级合并表头单元格
+        */
+       @GetMapping("/exportStudentScores2")
+       @ApiOperation(value = "导出学生成绩表")
+       @ResponseBody
+       public void exportStudentScores2(HttpServletResponse response) {
+           String fileName = "学生成绩表";
+           List<Map<String, Object>> mergeHeads = getMergeHeads();
+           List<Student> scores = getScores();
+           ExcelExportUtil.exportMergeHeadExcel(fileName, mergeHeads, scores, response);
+       }
+   
+       private List<Map<String, Object>> getMergeHeads() {
+           List<Map<String, Object>> mergeHeads = new ArrayList<>();
+           Map<String, Object> headMap = new LinkedHashMap<>();
+           headMap.put("ID", 1);
+           headMap.put("学生成绩", 3);
+           mergeHeads.add(headMap);
+   
+           headMap = new LinkedHashMap<>();
+           headMap.put("ID", 1);
+           headMap.put("姓名", 1);
+           headMap.put("成绩", 2);
+           mergeHeads.add(headMap);
+   
+           headMap = new LinkedHashMap<>();
+           headMap.put("id", "ID");
+           headMap.put("name", "姓名");
+           headMap.put("chineseScore", "语文");
+           headMap.put("mathScore", "数学");
+           mergeHeads.add(headMap);
+           return mergeHeads;
        }
    
        private Map<String, Map<String, String>> getMergeHeadMap() {
