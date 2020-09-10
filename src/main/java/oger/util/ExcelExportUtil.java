@@ -281,14 +281,14 @@ public class ExcelExportUtil {
             Map<String, Object> mergeHeadMap = mergeHeads.get(i);
             int index = 0;
             for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
-                if (entry.getValue() instanceof Integer) {
+                if (i < rows - 1) {
                     Integer value = Integer.valueOf(entry.getValue().toString());
                     while (value > 0) {
                         heads[i][index] = entry.getKey();
                         value--;
                         index++;
                     }
-                } else if (entry.getValue() instanceof String) {
+                } else {
                     heads[i][index] = entry.getValue().toString();
                     fieldNames[index] = entry.getKey();
                     index++;
@@ -305,7 +305,7 @@ public class ExcelExportUtil {
                     index++;
                     continue;
                 }
-                if (entry.getValue() instanceof Integer) {
+                if (i < rows - 1) {
                     Integer value = Integer.valueOf(entry.getValue().toString());
                     row.createCell(index).setCellValue(entry.getKey());
                     row.getCell(index).setCellStyle(tableHeadCellStyle);
@@ -317,7 +317,7 @@ public class ExcelExportUtil {
                         sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
                     }
                     index += value;
-                } else if (entry.getValue() instanceof String) {
+                } else {
                     row.createCell(index).setCellValue(entry.getValue().toString());
                     row.getCell(index).setCellStyle(tableHeadCellStyle);
                     index++;
