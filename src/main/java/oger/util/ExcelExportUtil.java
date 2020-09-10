@@ -219,7 +219,7 @@ public class ExcelExportUtil {
      * 创建表： 二级表头合并 无表标题  从指定行开始
      *
      * @param line
-     * @param mergeHeadMap： 外层Map的key为第一行名称，value为子表头Map；里层Map的key为字段名，value为名称；竖向单元格合并的应在每行Map中都有；Map采用LinkedHashMap
+     * @param mergeHeadMap： 外层Map的key为第一行名称，value为子表头Map；里层Map的key为字段名，value为名称；Map采用LinkedHashMap
      * @param dataset
      * @param sheet
      * @param workbook
