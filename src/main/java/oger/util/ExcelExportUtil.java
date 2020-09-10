@@ -271,8 +271,7 @@ public class ExcelExportUtil {
     public static int createMergeHeadTable(int line, List<Map<String, Object>> mergeHeads, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
         int rows = mergeHeads.size();
-        Map<String, Object> lastHeadMap = mergeHeads.get(rows - 1);
-        int cols = lastHeadMap.size();
+        int cols = mergeHeads.get(rows - 1).size();
         String[][] heads = new String[rows][cols];
         String[] fieldNames = new String[cols];
         //创建表头二维数组
