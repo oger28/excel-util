@@ -26,15 +26,16 @@ import java.util.*;
  * 2. 约定大于规定原则
  * <p>
  * 优点：
- * 1. 可任意创建多个sheet
- * 2. 可在任意位置创建table
- * 3. 可按顺序导出实体类任意字段:
- * 可通过Map<String,String> 的方式传入你想导出的字段
- * 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
- * 4. 可一次性导出单sheet单表模式的Excel
- * 5. 实现二级表头合并的方式创建表
- * 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
- * 7. 动态设置列宽
+    1. 可任意创建多个sheet
+    2. 可在任意位置创建table
+    3. 可按指定顺序导出实体类任意字段
+        - 同一字段在不同table中名称可不同
+        - 可通过Map<String,String> 的方式传入你想导出的字段
+        - 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
+    4. 可一次性导出单sheet单表模式的Excel
+    5. 实现二级树形表头合并的方式创建表
+    6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
+    7. 动态设置列宽
  */
 public class ExcelExportUtil {
 
@@ -217,7 +218,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 创建表： 二级表头合并 无表标题  从指定行开始
+     * 创建表： 二级树形表头合并 无表标题  从指定行开始
      *
      * @param line
      * @param mergeHeadMap： 外层Map的key为第一行名称，value为子表头Map；里层Map的key为字段名，value为名称；Map采用LinkedHashMap
