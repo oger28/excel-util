@@ -400,6 +400,7 @@ public class ExcelExportUtil {
         Row row;
         Cell cell;
         Object value;
+        int length;
         int[] headLens = new int[fieldNames.length];
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         while (it.hasNext()) {
@@ -420,7 +421,7 @@ public class ExcelExportUtil {
                         //需要别的类型用的时候自己扩展
                         cell.setCellValue(value.toString());
                     }
-                    int length = cell.getStringCellValue().getBytes().length;
+                    length = cell.getStringCellValue().getBytes().length;
                     headLens[i] = length > headLens[i] ? length : headLens[i];
                 } catch (Exception e) {
                     logger.error("导出文件数据失败", e);
@@ -430,9 +431,10 @@ public class ExcelExportUtil {
             }
         }
         // 动态设置列宽
-        for (int i = 0, length = headLens.length; i < length; i++) {
-            headLens[i] = headLens[i] < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : headLens[i];
-            sheet.setColumnWidth(i, headLens[i] * 256);
+        for (int i = 0, len = headLens.length; i < len; i++) {
+            length = headLens[i];
+            length = length < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : length;
+            sheet.setColumnWidth(i, length * 256);
         }
         return ++line;
     }
