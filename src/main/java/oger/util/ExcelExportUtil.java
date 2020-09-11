@@ -41,7 +41,7 @@ public class ExcelExportUtil {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelExportUtil.class);
     private static int DEFAULT_COL_WIDTH = 10;   // 默认列宽
-    private static int SHEET_TITLE_WIDTH = 22;  // sheet标题宽度
+    private static int SHEET_TITLE_LENGTH = 22;  // sheet标题长度
 
     /**
      * 导出excel
@@ -469,7 +469,7 @@ public class ExcelExportUtil {
         CellStyle sheetHeadCellStyle = getSheetTitleCellStyle(workbook);
         cell.setCellStyle(sheetHeadCellStyle);
         //标题 2行 22列 可视具体情况修改，亦可重构方法传参动态设置列数
-        sheet.addMergedRegion(new CellRangeAddress(line, line + 1, 0, SHEET_TITLE_WIDTH));//起始行号，终止行号， 起始列号，终止列号
+        sheet.addMergedRegion(new CellRangeAddress(line, line + 1, 0, SHEET_TITLE_LENGTH));//起始行号，终止行号， 起始列号，终止列号
         return line + 2;
     }
 
