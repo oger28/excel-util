@@ -61,7 +61,7 @@ public class ExcelExportUtil {
             out.flush();
         } catch (Exception e) {
             logger.error("导出文件失败", e);
-            //可替换成自己项目中包装的异常类
+            // TODO 可替换成自己项目中包装的异常类
             throw new RuntimeException("导出文件失败");
         } finally {
             try {
@@ -418,14 +418,15 @@ public class ExcelExportUtil {
                     } else if (value instanceof Date) {
                         cell.setCellValue(sdf.format((Date) value));
                     } else {
-                        //需要别的类型用的时候自己扩展
+                        // TODO 需要别的类型可自行扩展
+                        // 能用toString()直接转string类型的都直接转成string类型
                         cell.setCellValue(value.toString());
                     }
                     length = cell.getStringCellValue().getBytes().length;
                     headLens[i] = length > headLens[i] ? length : headLens[i];
                 } catch (Exception e) {
                     logger.error("导出文件数据失败", e);
-                    //可替换成自己项目中包装的异常类
+                    // TODO 可替换成自己项目中包装的异常类
                     throw new RuntimeException("导出文件失败");
                 }
             }
