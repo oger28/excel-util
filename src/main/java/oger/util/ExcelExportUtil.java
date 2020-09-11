@@ -31,14 +31,16 @@ import java.util.*;
  * 2. 可在任意位置创建table
  * 3. 可按顺序导出实体类任意字段:
  * 可通过Map<String,String> 的方式传入你想导出的字段
- * 亦可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
- * 4. 亦可一次性导出单sheet单表模式的Excel
+ * 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
+ * 4. 可一次性导出单sheet单表模式的Excel
  * 5. 实现二级表头合并的方式创建表
  * 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
+ * 7. 动态设置列宽
  */
 public class ExcelExportUtil {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelExportUtil.class);
+    public static int DEFAULT_COL_WIDTH = 10;
 
     /**
      * 导出excel
@@ -398,6 +400,7 @@ public class ExcelExportUtil {
         Row row;
         Cell cell;
         Object value;
+        int[] headLens = new int[fieldNames.length];
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         while (it.hasNext()) {
             row = sheet.createRow(line);
@@ -411,13 +414,18 @@ public class ExcelExportUtil {
                     cell = row.createCell(i);
                     if (value == null) {
                         cell.setCellValue("");
-                    } else if (value instanceof BigDecimal) {
-                        cell.setCellValue(((BigDecimal) value).doubleValue());
                     } else if (value instanceof Date) {
                         cell.setCellValue(sdf.format((Date) value));
                     } else {
                         //需要别的类型用的时候自己扩展
                         cell.setCellValue(value.toString());
+                    }
+                    // 动态设置列宽
+                    int length = cell.getStringCellValue().getBytes().length;
+                    length = length < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : length;
+                    if (length > headLens[i]) {
+                        sheet.setColumnWidth(i, length * 256);
+                        headLens[i] = length;
                     }
                 } catch (Exception e) {
                     logger.error("导出文件数据失败", e);

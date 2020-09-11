@@ -167,7 +167,7 @@ public class StudentController {
     private List<Student> getScores() {
         List<Student> students = new ArrayList<>();
         try {
-            Student student = new Student(1, "张三", 99, 100);
+            Student student = new Student(1, "张三1111111111111111111111", 99, 100);
             students.add(student);
             student = new Student(2, "李四", 99, 79);
             students.add(student);
