@@ -438,7 +438,7 @@ public class ExcelExportUtil {
             length = length < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : length;
             sheet.setColumnWidth(i, length * 256);
         }
-        return ++line;
+        return line + 2;
     }
 
     /**
