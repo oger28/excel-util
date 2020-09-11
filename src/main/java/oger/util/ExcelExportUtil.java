@@ -26,21 +26,22 @@ import java.util.*;
  * 2. 约定大于规定原则
  * <p>
  * 优点：
-    1. 可任意创建多个sheet
-    2. 可在任意位置创建table
-    3. 可按指定顺序导出实体类任意字段
-        - 同一字段在不同table中名称可不同
-        - 可通过Map<String,String> 的方式传入你想导出的字段
-        - 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
-    4. 可一次性导出单sheet单表模式的Excel
-    5. 实现二级树形表头合并的方式创建表
-    6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
-    7. 动态设置列宽
+ * 1. 可任意创建多个sheet
+ * 2. 可在任意位置创建table
+ * 3. 可按指定顺序导出实体类任意字段
+ * - 同一字段在不同table中名称可不同
+ * - 可通过Map<String,String> 的方式传入你想导出的字段
+ * - 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
+ * 4. 可一次性导出单sheet单表模式的Excel
+ * 5. 实现二级树形表头合并的方式创建表
+ * 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
+ * 7. 动态设置列宽
  */
 public class ExcelExportUtil {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelExportUtil.class);
-    public static int DEFAULT_COL_WIDTH = 10;
+    private static int DEFAULT_COL_WIDTH = 10;   // 默认列宽
+    private static int SHEET_TITLE_WIDTH = 22;  // sheet标题宽度
 
     /**
      * 导出excel
@@ -468,7 +469,7 @@ public class ExcelExportUtil {
         CellStyle sheetHeadCellStyle = getSheetTitleCellStyle(workbook);
         cell.setCellStyle(sheetHeadCellStyle);
         //标题 2行 22列 可视具体情况修改，亦可重构方法传参动态设置列数
-        sheet.addMergedRegion(new CellRangeAddress(line, line + 1, 0, 22));//起始行号，终止行号， 起始列号，终止列号
+        sheet.addMergedRegion(new CellRangeAddress(line, line + 1, 0, SHEET_TITLE_WIDTH));//起始行号，终止行号， 起始列号，终止列号
         return line + 2;
     }
 
