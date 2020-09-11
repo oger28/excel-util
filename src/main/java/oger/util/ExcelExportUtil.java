@@ -420,19 +420,19 @@ public class ExcelExportUtil {
                         //需要别的类型用的时候自己扩展
                         cell.setCellValue(value.toString());
                     }
-                    // 动态设置列宽
                     int length = cell.getStringCellValue().getBytes().length;
-                    length = length < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : length;
-                    if (length > headLens[i]) {
-                        sheet.setColumnWidth(i, length * 256);
-                        headLens[i] = length;
-                    }
+                    headLens[i] = length > headLens[i] ? length : headLens[i];
                 } catch (Exception e) {
                     logger.error("导出文件数据失败", e);
                     //可替换成自己项目中包装的异常类
                     throw new RuntimeException("导出文件失败");
                 }
             }
+        }
+        // 动态设置列宽
+        for (int i = 0, length = headLens.length; i < length; i++) {
+            headLens[i] = headLens[i] < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : headLens[i];
+            sheet.setColumnWidth(i, headLens[i] * 256);
         }
         return ++line;
     }
