@@ -13,10 +13,11 @@ Excel导出工具类
  2. 可在任意位置创建table
  3. 可按顺序导出实体类任意字段
     - 可通过Map<String,String> 的方式传入你想导出的字段
-    - 亦可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
- 4. 亦可一次性导出单sheet单表模式的Excel
+    - 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
+ 4. 可一次性导出单sheet单表模式的Excel
  5. 实现二级表头合并的方式创建表
  6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
+ 7. 动态设置列宽
  
 ```
    /**
