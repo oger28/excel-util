@@ -33,7 +33,7 @@ public class StudentController {
      * 单sheet单表模式，调用一个方法即可实现导出
      */
     @GetMapping("/exportStudents")
-    @ApiOperation(value = "导出学生")
+    @ApiOperation(value = "单sheet单表模式导出")
     @ResponseBody
     public void exportStudents(HttpServletResponse response) {
         String fileName = "学生列表";
@@ -47,7 +47,7 @@ public class StudentController {
      * 创建多个sheet 导出
      */
     @GetMapping("/exportStudentsAndTeachers")
-    @ApiOperation(value = "导出学生和老师")
+    @ApiOperation(value = "多sheet导出")
     @ResponseBody
     public void exportStudentsAndTeachers(HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
@@ -76,7 +76,7 @@ public class StudentController {
      * 在一个 sheet 中有多张表
      */
     @GetMapping("/exportStudentsAndTeachers2")
-    @ApiOperation(value = "导出学生和老师2")
+    @ApiOperation(value = "同sheet多表导出")
     @ResponseBody
     public void exportStudentsAndTeachers2(HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
@@ -103,7 +103,7 @@ public class StudentController {
      * 二级合并表头单元格
      */
     @GetMapping("/exportStudentScores")
-    @ApiOperation(value = "导出学生成绩表")
+    @ApiOperation(value = "二级树形表头导出")
     @ResponseBody
     public void exportStudentScores(HttpServletResponse response) {
         String fileName = "学生成绩表";
@@ -116,7 +116,7 @@ public class StudentController {
      * 多级合并表头单元格
      */
     @GetMapping("/exportStudentScores2")
-    @ApiOperation(value = "导出学生成绩表")
+    @ApiOperation(value = "多级表头导出")
     @ResponseBody
     public void exportStudentScores2(HttpServletResponse response) {
         String fileName = "学生成绩表";
