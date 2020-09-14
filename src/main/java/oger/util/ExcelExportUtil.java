@@ -443,18 +443,19 @@ public class ExcelExportUtil {
     /**
      * 创建sheet标题: 从指定行开始
      *
+     * @param length
      * @param sheetName
      * @param sheet
      * @param workbook
      * @return
      */
-    public static int createSheetTitle(int sheetTitleLen, String sheetName, Sheet sheet, HSSFWorkbook workbook) {
+    public static int createSheetTitle(int length, String sheetName, Sheet sheet, HSSFWorkbook workbook) {
         Row row = sheet.createRow(0);
         Cell cell = row.createCell(0);
         cell.setCellValue(sheetName);
         CellStyle sheetHeadCellStyle = getSheetTitleCellStyle(workbook);
         cell.setCellStyle(sheetHeadCellStyle);
-        sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, sheetTitleLen - 1));//起始行号，终止行号， 起始列号，终止列号
+        sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, length - 1));//起始行号，终止行号， 起始列号，终止列号
         return 2;
     }
 
