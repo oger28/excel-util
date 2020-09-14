@@ -32,7 +32,7 @@ import java.util.*;
  * - 同一字段在不同table中名称可不同
  * - 可通过Map<String,String> 的方式传入你想导出的字段
  * - 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
- * 4. 可一次性导出单sheet单表模式的Excel
+ * 4. 单sheet单表模式快捷导出Excel
  * 5. 实现二级树形表头合并的方式创建表
  * 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
  * 7. 动态设置列宽
@@ -43,7 +43,7 @@ public class ExcelExportUtil {
     private static int DEFAULT_COL_WIDTH = 10;   // 默认列宽
 
     /**
-     * 导出excel
+     * 自定义模式导出excel
      *
      * @param fileName
      * @param workbook
@@ -83,7 +83,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 导出excel: 有sheet标题 有表标题
+     * 单sheet单表模式快捷导出excel: 有sheet标题 有表标题
      *
      * @param fileName
      * @param sheetName
@@ -101,7 +101,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 导出excel: 无sheet标题 无表标题
+     * 单sheet单表模式快捷导出excel: 无sheet标题 无表标题
      *
      * @param fileName
      * @param headMap
@@ -116,7 +116,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 导出excel: 二级合并表头 无sheet标题 无表标题
+     * 单sheet单表模式快捷导出excel: 二级合并表头 无sheet标题 无表标题
      *
      * @param fileName
      * @param dataset
@@ -130,7 +130,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 导出excel: 多级合并表头 无sheet标题 无表标题
+     * 单sheet单表模式快捷导出excel: 多级合并表头 无sheet标题 无表标题
      *
      * @param fileName
      * @param dataset
@@ -141,6 +141,118 @@ public class ExcelExportUtil {
         HSSFSheet sheet = workbook.createSheet(fileName);
         createMergeHeadTable(0, mergeHeads, dataset, sheet, workbook);
         exportExcel(fileName, workbook, response);
+    }
+
+    /**
+     * 创建表： 多级表头合并 无表标题  从指定行开始  兼容二级表头合并
+     *
+     * @param line
+     * @param mergeHeads： 表头每一行对应一个Map<String,Object>；非底行的key为名称，value为合并单元格数量；底行的key为字段名，value为名称；竖向单元格合并的应在每行Map中都有；Map采用LinkedHashMap
+     * @param dataset
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createMergeHeadTable(int line, List<Map<String, Object>> mergeHeads, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+        CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
+        int rows = mergeHeads.size();
+        int cols = mergeHeads.get(rows - 1).size();
+        String[][] heads = new String[rows][cols];
+        String[] fieldNames = new String[cols];
+        //创建表头二维数组
+        for (int i = 0; i < rows; i++) {
+            heads[i] = new String[cols];
+            Map<String, Object> mergeHeadMap = mergeHeads.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
+                if (i < rows - 1) {
+                    Integer value = Integer.valueOf(entry.getValue().toString());
+                    while (value > 0) {
+                        heads[i][index] = entry.getKey();
+                        value--;
+                        index++;
+                    }
+                } else {
+                    heads[i][index] = entry.getValue().toString();
+                    fieldNames[index] = entry.getKey();
+                    index++;
+                }
+            }
+        }
+        //创建表头
+        for (int i = 0; i < rows; i++) {
+            Row row = sheet.createRow(line + i);
+            Map<String, Object> mergeHeadMap = mergeHeads.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
+                if (i > 0 && StringUtils.equals(heads[i - 1][index], heads[i][index])) {
+                    index++;
+                    continue;
+                }
+                if (i < rows - 1) {
+                    Integer value = Integer.valueOf(entry.getValue().toString());
+                    row.createCell(index).setCellValue(entry.getKey());
+                    row.getCell(index).setCellStyle(tableHeadCellStyle);
+                    int lastRow = i;
+                    while (lastRow < rows - 1 && StringUtils.equals(heads[lastRow][index], heads[lastRow + 1][index])) {
+                        lastRow++;
+                    }
+                    if (lastRow > i || value > 1) {
+                        sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                    }
+                    index += value;
+                } else {
+                    row.createCell(index).setCellValue(entry.getValue().toString());
+                    row.getCell(index).setCellStyle(tableHeadCellStyle);
+                    index++;
+                }
+            }
+        }
+        //创建表体
+        return createTableBody(line + rows, sheet, fieldNames, dataset);
+    }
+
+    /**
+     * 创建表： 二级树形表头合并 无表标题  从指定行开始
+     *
+     * @param line
+     * @param mergeHeadMap： 外层Map的key为第一行名称，value为子表头Map；里层Map的key为字段名，value为名称；Map采用LinkedHashMap
+     * @param dataset
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createMergeHeadTable(int line, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+        Row row1 = sheet.createRow(line);
+        Row row2 = sheet.createRow(line + 1);
+        CellStyle tableHeaderCellStyle = getTableHeadCellStyle(workbook);
+        int index = 0;
+        List<String> fieldNames = new ArrayList<>();
+        //创建表头
+        for (Map.Entry<String, Map<String, String>> entry : mergeHeadMap.entrySet()) {
+            String key = entry.getKey();
+            Map<String, String> value = entry.getValue();
+            if (value.size() < 1) {
+                continue;
+            }
+            row1.createCell(index).setCellValue(key);
+            row1.getCell(index).setCellStyle(tableHeaderCellStyle);
+            if (value.size() == 1) {
+                sheet.addMergedRegion(new CellRangeAddress(line, line + 1, index, index));//起始行号，终止行号， 起始列号，终止列号
+                fieldNames.addAll(value.keySet());
+                index++;
+            } else {
+                sheet.addMergedRegion(new CellRangeAddress(line, line, index, index + value.size() - 1));//起始行号，终止行号， 起始列号，终止列号
+                for (Map.Entry<String, String> child : value.entrySet()) {
+                    row2.createCell(index).setCellValue(child.getValue());
+                    row2.getCell(index).setCellStyle(tableHeaderCellStyle);
+                    fieldNames.add(child.getKey());
+                    index++;
+                }
+            }
+        }
+        //创建表体
+        return createTableBody(line + 2, sheet, fieldNames.stream().toArray(String[]::new), dataset);
     }
 
     /**
@@ -218,138 +330,6 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 创建表： 二级树形表头合并 无表标题  从指定行开始
-     *
-     * @param line
-     * @param mergeHeadMap： 外层Map的key为第一行名称，value为子表头Map；里层Map的key为字段名，value为名称；Map采用LinkedHashMap
-     * @param dataset
-     * @param sheet
-     * @param workbook
-     * @return
-     */
-    public static int createMergeHeadTable(int line, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
-        Row row1 = sheet.createRow(line);
-        Row row2 = sheet.createRow(line + 1);
-        CellStyle tableHeaderCellStyle = getTableHeadCellStyle(workbook);
-        int index = 0;
-        List<String> fieldNames = new ArrayList<>();
-        //创建表头
-        for (Map.Entry<String, Map<String, String>> entry : mergeHeadMap.entrySet()) {
-            String key = entry.getKey();
-            Map<String, String> value = entry.getValue();
-            if (value.size() < 1) {
-                continue;
-            }
-            row1.createCell(index).setCellValue(key);
-            row1.getCell(index).setCellStyle(tableHeaderCellStyle);
-            if (value.size() == 1) {
-                sheet.addMergedRegion(new CellRangeAddress(line, line + 1, index, index));//起始行号，终止行号， 起始列号，终止列号
-                fieldNames.addAll(value.keySet());
-                index++;
-            } else {
-                sheet.addMergedRegion(new CellRangeAddress(line, line, index, index + value.size() - 1));//起始行号，终止行号， 起始列号，终止列号
-                for (Map.Entry<String, String> child : value.entrySet()) {
-                    row2.createCell(index).setCellValue(child.getValue());
-                    row2.getCell(index).setCellStyle(tableHeaderCellStyle);
-                    fieldNames.add(child.getKey());
-                    index++;
-                }
-            }
-        }
-        //创建表体
-        return createTableBody(line + 2, sheet, fieldNames.stream().toArray(String[]::new), dataset);
-    }
-
-    /**
-     * 创建表： 多级表头合并 无表标题  从指定行开始  兼容二级表头合并
-     *
-     * @param line
-     * @param mergeHeads： 表头每一行对应一个Map<String,Object>；非底行的key为名称，value为合并单元格数量；底行的key为字段名，value为名称；竖向单元格合并的应在每行Map中都有；Map采用LinkedHashMap
-     * @param dataset
-     * @param sheet
-     * @param workbook
-     * @return
-     */
-    public static int createMergeHeadTable(int line, List<Map<String, Object>> mergeHeads, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
-        CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
-        int rows = mergeHeads.size();
-        int cols = mergeHeads.get(rows - 1).size();
-        String[][] heads = new String[rows][cols];
-        String[] fieldNames = new String[cols];
-        //创建表头二维数组
-        for (int i = 0; i < rows; i++) {
-            heads[i] = new String[cols];
-            Map<String, Object> mergeHeadMap = mergeHeads.get(i);
-            int index = 0;
-            for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
-                if (i < rows - 1) {
-                    Integer value = Integer.valueOf(entry.getValue().toString());
-                    while (value > 0) {
-                        heads[i][index] = entry.getKey();
-                        value--;
-                        index++;
-                    }
-                } else {
-                    heads[i][index] = entry.getValue().toString();
-                    fieldNames[index] = entry.getKey();
-                    index++;
-                }
-            }
-        }
-        //创建表头
-        for (int i = 0; i < rows; i++) {
-            Row row = sheet.createRow(line + i);
-            Map<String, Object> mergeHeadMap = mergeHeads.get(i);
-            int index = 0;
-            for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
-                if (i > 0 && StringUtils.equals(heads[i - 1][index], heads[i][index])) {
-                    index++;
-                    continue;
-                }
-                if (i < rows - 1) {
-                    Integer value = Integer.valueOf(entry.getValue().toString());
-                    row.createCell(index).setCellValue(entry.getKey());
-                    row.getCell(index).setCellStyle(tableHeadCellStyle);
-                    int lastRow = i;
-                    while (lastRow < rows - 1 && StringUtils.equals(heads[lastRow][index], heads[lastRow + 1][index])) {
-                        lastRow++;
-                    }
-                    if (lastRow > i || value > 1) {
-                        sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
-                    }
-                    index += value;
-                } else {
-                    row.createCell(index).setCellValue(entry.getValue().toString());
-                    row.getCell(index).setCellStyle(tableHeadCellStyle);
-                    index++;
-                }
-            }
-        }
-        //创建表体
-        return createTableBody(line + rows, sheet, fieldNames, dataset);
-    }
-
-    /**
-     * 创建表标题
-     *
-     * @param line
-     * @param tableName
-     * @param headLength
-     * @param sheet
-     * @param workbook
-     * @return
-     */
-    public static int createTableTitle(int line, String tableName, int headLength, Sheet sheet, HSSFWorkbook workbook) {
-        Row row = sheet.createRow(line);
-        Cell cell = row.createCell(0);
-        cell.setCellValue(tableName);
-        CellStyle tableTitleCellStyle = getTableTitleCellStyle(workbook);
-        cell.setCellStyle(tableTitleCellStyle);
-        sheet.addMergedRegion(new CellRangeAddress(line, line, 0, headLength - 1));//起始行号，终止行号， 起始列号，终止列号
-        return ++line;
-    }
-
-    /**
      * 创建表头： 有表标题
      *
      * @param line
@@ -380,6 +360,26 @@ public class ExcelExportUtil {
             head.createCell(i).setCellValue(headNames[i]);
             head.getCell(i).setCellStyle(tableHeaderCellStyle);
         }
+        return ++line;
+    }
+
+    /**
+     * 创建表标题
+     *
+     * @param line
+     * @param tableName
+     * @param headLength
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createTableTitle(int line, String tableName, int headLength, Sheet sheet, HSSFWorkbook workbook) {
+        Row row = sheet.createRow(line);
+        Cell cell = row.createCell(0);
+        cell.setCellValue(tableName);
+        CellStyle tableTitleCellStyle = getTableTitleCellStyle(workbook);
+        cell.setCellStyle(tableTitleCellStyle);
+        sheet.addMergedRegion(new CellRangeAddress(line, line, 0, headLength - 1));//起始行号，终止行号， 起始列号，终止列号
         return ++line;
     }
 
