@@ -35,7 +35,7 @@ import java.util.*;
  * 4. 单sheet单表模式快捷导出Excel
  * 5. 实现二级树形表头合并的方式创建表
  * 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
- * 7. 动态设置列宽
+ * 7. 自动设置列宽
  */
 public class ExcelExportUtil {
 
@@ -43,7 +43,7 @@ public class ExcelExportUtil {
     private static int DEFAULT_COL_WIDTH = 10;   // 默认列宽
 
     /**
-     * 自定义模式导出excel
+     * 自定义模式导出excel： 需自己创建workbook
      *
      * @param fileName
      * @param workbook
@@ -431,13 +431,28 @@ public class ExcelExportUtil {
                 }
             }
         }
-        // 动态设置列宽
+        // 根据数据自动设置列宽
         for (int i = 0, len = headLens.length; i < len; i++) {
             length = headLens[i];
             length = length < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : length;
             sheet.setColumnWidth(i, length * 256);
         }
         return line + 2;
+    }
+
+    /**
+     * 根据表头自动设置列宽
+     *
+     * @param headNames
+     * @param sheet
+     */
+    public static void setColWidth(String[] headNames, Sheet sheet) {
+        int length;
+        for (int i = 0, len = headNames.length; i < len; i++) {
+            length = headNames[i].getBytes().length;
+            length = length < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : length;
+            sheet.setColumnWidth(i, length * 256);
+        }
     }
 
     /**
