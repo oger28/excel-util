@@ -87,7 +87,7 @@ public class StudentController {
         headMap.put("name", "姓名");
         headMap.put("birthday", "生日");
         String tableName = "学生列表";
-        int line = ExcelExportUtil.createSheetTitle(fileName, sheet, workbook);
+        int line = ExcelExportUtil.createSheetTitle(headMap.size(),fileName, sheet, workbook);
         line = ExcelExportUtil.createTable(line, tableName, headMap, getStudents(), sheet, workbook);
 
         tableName = "教师列表";

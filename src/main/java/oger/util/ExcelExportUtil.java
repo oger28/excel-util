@@ -41,7 +41,6 @@ public class ExcelExportUtil {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelExportUtil.class);
     private static int DEFAULT_COL_WIDTH = 10;   // 默认列宽
-    private static int SHEET_TITLE_LENGTH = 22;  // sheet标题长度
 
     /**
      * 导出excel
@@ -96,7 +95,7 @@ public class ExcelExportUtil {
     public static void exportExcel(String fileName, String sheetName, String tableName, Map<String, String> headMap, Collection dataset, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(sheetName);
-        int line = createSheetTitle(sheetName, sheet, workbook);
+        int line = createSheetTitle(headMap.size(), sheetName, sheet, workbook);
         createTable(line, tableName, headMap, dataset, sheet, workbook);
         exportExcel(fileName, workbook, response);
     }
@@ -442,35 +441,21 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 创建sheet标题
-     *
-     * @param sheetName
-     * @param sheet
-     * @param workbook
-     * @return
-     */
-    public static int createSheetTitle(String sheetName, Sheet sheet, HSSFWorkbook workbook) {
-        return createSheetTitle(0, sheetName, sheet, workbook);
-    }
-
-    /**
      * 创建sheet标题: 从指定行开始
      *
-     * @param line
      * @param sheetName
      * @param sheet
      * @param workbook
      * @return
      */
-    public static int createSheetTitle(int line, String sheetName, Sheet sheet, HSSFWorkbook workbook) {
-        Row row = sheet.createRow(line);
+    public static int createSheetTitle(int sheetTitleLen, String sheetName, Sheet sheet, HSSFWorkbook workbook) {
+        Row row = sheet.createRow(0);
         Cell cell = row.createCell(0);
         cell.setCellValue(sheetName);
         CellStyle sheetHeadCellStyle = getSheetTitleCellStyle(workbook);
         cell.setCellStyle(sheetHeadCellStyle);
-        //标题 2行 22列 可视具体情况修改，亦可重构方法传参动态设置列数
-        sheet.addMergedRegion(new CellRangeAddress(line, line + 1, 0, SHEET_TITLE_LENGTH));//起始行号，终止行号， 起始列号，终止列号
-        return line + 2;
+        sheet.addMergedRegion(new CellRangeAddress(0, 1, 0, sheetTitleLen - 1));//起始行号，终止行号， 起始列号，终止列号
+        return 2;
     }
 
     /**
