@@ -134,7 +134,7 @@ public class StudentController {
         Sheet sheet = workbook.createSheet(fileName);
         List<Map<String, Integer>> datas = getObjectCells();
         int line = ExcelExportUtil.createTableTitle(0, "成绩单", 5, sheet, workbook);
-        ExcelExportUtil.createSimpleObjectTable(line, new Student(1, "赵日天", new Date(), 100, 100), datas, sheet);
+        ExcelExportUtil.createSimpleObjectTable(line, new Student(1, "赵日天", new Date(), 100, 100), datas, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 

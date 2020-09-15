@@ -154,7 +154,7 @@ public class ExcelExportUtil {
      * @param <T>
      * @return
      */
-    public static <T> int createSimpleObjectTable(int line, T t, List<Map<String, Integer>> datas, Sheet sheet) {
+    public static <T> int createSimpleObjectTable(int line, T t, List<Map<String, Integer>> datas, Sheet sheet, HSSFWorkbook workbook) {
         int rows = datas.size();
         Integer cols = datas.stream().map(map -> {
             int sum = 0;
@@ -179,6 +179,7 @@ public class ExcelExportUtil {
             }
         }
         SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
+        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
         String getMethodName;
         Object fieldValue;
         //合并单元格
@@ -215,6 +216,7 @@ public class ExcelExportUtil {
                 }
                 if (lastRow > i || value > 1) {
                     sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                    row.getCell(index).setCellStyle(tableBodyCellStyle);
                 }
                 index += value;
             }
@@ -603,6 +605,19 @@ public class ExcelExportUtil {
         HSSFFont font = workbook.createFont();
         font.setBold(true);
         style.setFont(font);
+        return style;
+    }
+
+    /**
+     * 获取表体单元格样式
+     *
+     * @param workbook
+     * @return
+     */
+    public static CellStyle getTableBodyCellStyle(HSSFWorkbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
+        style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中
         return style;
     }
 }
