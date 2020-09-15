@@ -29,6 +29,14 @@ public class Student {
         this.mathScore = mathScore;
     }
 
+    public Student(Integer id, String name, Date birthday, Integer chineseScore, Integer mathScore) {
+        this.id = id;
+        this.name = name;
+        this.birthday = birthday;
+        this.chineseScore = chineseScore;
+        this.mathScore = mathScore;
+    }
+
     @ApiModelProperty("ID")
     private Integer id;
 

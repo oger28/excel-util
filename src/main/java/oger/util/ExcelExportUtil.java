@@ -41,6 +41,7 @@ public class ExcelExportUtil {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelExportUtil.class);
     private static int DEFAULT_COL_WIDTH = 10;   // 默认列宽
+    public static String DEFAULT_DATE_PATTERN = "yyyy年MM月dd日";//默认日期格式
 
     /**
      * 自定义模式导出excel： 需自己创建workbook
@@ -144,6 +145,84 @@ public class ExcelExportUtil {
     }
 
     /**
+     * 导出简单对象表格： 对象无集合属性字段
+     *
+     * @param line
+     * @param t
+     * @param datas
+     * @param sheet
+     * @param <T>
+     * @return
+     */
+    public static <T> int createSimpleObjectTable(int line, T t, List<Map<String, Integer>> datas, Sheet sheet) {
+        int rows = datas.size();
+        Integer cols = datas.stream().map(map -> {
+            int sum = 0;
+            for (Map.Entry<String, Integer> entry : map.entrySet()) {
+                sum += entry.getValue();
+            }
+            return sum;
+        }).max(Integer::compareTo).get();
+        //创建表头二维数组
+        String[][] cells = new String[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            cells[i] = new String[cols];
+            Map<String, Integer> dataMap = datas.get(i);
+            int index = 0;
+            for (Map.Entry<String, Integer> entry : dataMap.entrySet()) {
+                Integer value = Integer.valueOf(entry.getValue().toString());
+                while (value > 0) {
+                    cells[i][index] = entry.getKey();
+                    value--;
+                    index++;
+                }
+            }
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
+        String getMethodName;
+        Object fieldValue;
+        //合并单元格
+        for (int i = 0; i < rows; i++) {
+            Row row = sheet.createRow(line + i);
+            Map<String, Integer> dataMap = datas.get(i);
+            int index = 0;
+            for (Map.Entry<String, Integer> entry : dataMap.entrySet()) {
+                if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
+                    index++;
+                    continue;
+                }
+                Integer value = entry.getValue();
+                String key = entry.getKey();
+                getMethodName = "get" + key.substring(0, 1).toUpperCase() + key.substring(1);
+                try {
+                    fieldValue = t.getClass().getMethod(getMethodName).invoke(t);
+                    if (fieldValue == null) {
+                        fieldValue = "";
+                    } else if (fieldValue instanceof Date) {
+                        fieldValue = sdf.format((Date) fieldValue);
+                    }
+                    row.createCell(index).setCellValue(fieldValue.toString());
+                } catch (NoSuchMethodException e) {
+                    row.createCell(index).setCellValue(key);
+                } catch (Exception e) {
+                    logger.error("导出文件失败", e);
+                    // TODO 可替换成自己项目中包装的异常类
+                    throw new RuntimeException("导出文件失败");
+                }
+                int lastRow = i;
+                while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
+                    lastRow++;
+                }
+                if (lastRow > i || value > 1) {
+                    sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                }
+                index += value;
+            }
+        }
+        return line + rows;
+    }
+
+    /**
      * 创建表： 多级表头合并 无表标题  从指定行开始  兼容二级表头合并
      *
      * @param line
@@ -157,9 +236,9 @@ public class ExcelExportUtil {
         CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
         int rows = mergeHeads.size();
         int cols = mergeHeads.get(rows - 1).size();
-        String[][] heads = new String[rows][cols];
         String[] fieldNames = new String[cols];
         //创建表头二维数组
+        String[][] heads = new String[rows][cols];
         for (int i = 0; i < rows; i++) {
             heads[i] = new String[cols];
             Map<String, Object> mergeHeadMap = mergeHeads.get(i);
@@ -402,7 +481,7 @@ public class ExcelExportUtil {
         Object value;
         int length;
         int[] headLens = new int[fieldNames.length];
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
         while (it.hasNext()) {
             row = sheet.createRow(line);
             line++;

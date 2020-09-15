@@ -14,10 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletResponse;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @Auther: Oger
@@ -87,7 +84,7 @@ public class StudentController {
         headMap.put("name", "姓名");
         headMap.put("birthday", "生日");
         String tableName = "学生列表";
-        int line = ExcelExportUtil.createSheetTitle(headMap.size(),fileName, sheet, workbook);
+        int line = ExcelExportUtil.createSheetTitle(headMap.size(), fileName, sheet, workbook);
         line = ExcelExportUtil.createTable(line, tableName, headMap, getStudents(), sheet, workbook);
 
         tableName = "教师列表";
@@ -123,6 +120,45 @@ public class StudentController {
         List<Map<String, Object>> mergeHeads = getMergeHeads();
         List<Student> scores = getScores();
         ExcelExportUtil.exportMergeHeadExcel(fileName, mergeHeads, scores, response);
+    }
+
+    /**
+     * 简单对象表格导出
+     */
+    @GetMapping("/exportStudent")
+    @ApiOperation(value = "简单对象表格导出")
+    @ResponseBody
+    public void exportStudent(HttpServletResponse response) {
+        String fileName = "学生信息表";
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        Sheet sheet = workbook.createSheet(fileName);
+        List<Map<String, Integer>> datas = getObjectCells();
+        int line = ExcelExportUtil.createTableTitle(0, "成绩单", 5, sheet, workbook);
+        ExcelExportUtil.createSimpleObjectTable(line, new Student(1, "赵日天", new Date(), 100, 100), datas, sheet);
+        ExcelExportUtil.exportExcel(fileName, workbook, response);
+    }
+
+    private List<Map<String, Integer>> getObjectCells() {
+        List<Map<String, Integer>> cells = new ArrayList<>();
+        Map<String, Integer> rowMap = new LinkedHashMap<>();
+        rowMap.put("ID:", 1);
+        rowMap.put("id", 4);
+        cells.add(rowMap);
+
+        rowMap = new LinkedHashMap<>();
+        rowMap.put("name", 1);
+        rowMap.put("生日:", 1);
+        rowMap.put("birthday", 3);
+        cells.add(rowMap);
+
+        rowMap = new LinkedHashMap<>();
+        rowMap.put("name", 1);
+        rowMap.put("语文:", 1);
+        rowMap.put("chineseScore", 1);
+        rowMap.put("数学:", 1);
+        rowMap.put("mathScore", 1);
+        cells.add(rowMap);
+        return cells;
     }
 
     private List<Map<String, Object>> getMergeHeads() {
