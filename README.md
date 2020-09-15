@@ -3,23 +3,25 @@ Excel导出工具类
 
  - 基于SpringBoot、POI、Swagger  
     
- * 设计思想：
- 1. 样式最简化原则
- 2. 约定大于规定原则
+ - 设计思想：
+    1. 样式最简化原则
+    2. 约定大于规定原则
 
  
- * 优点：
- 1. 可任意创建多个sheet
- 2. 可在任意位置创建table
- 3. 可按指定顺序导出实体类任意字段
-    - 同一字段在不同table中名称可不同
-    - 可通过Map<String,String> 的方式传入你想导出的字段
-    - 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
- 4. 可一次性导出单sheet单表模式的Excel
- 5. 实现二级树形表头合并的方式创建表
- 6. 实现多级表头合并的方式创建表(兼容二级表头合并的方式)
- 7. 自动设置列宽
- 8. Controller 每一个接口对应一个demo
+    优点：
+        1. Controller 每一个接口对应一个demo
+        2. 可任意创建多个sheet
+        3. 可在任意位置创建table
+        4. 可按指定顺序导出实体类任意字段
+        - 同一字段在不同table中名称可不同
+        - 可通过Map<String,String> 的方式传入你想导出的字段
+        - 可通过String[] headNames 和 String[] fieldNames 搭配的方式传入你想导出的字段
+        5. 单sheet单表模式快捷导出Excel
+        6. 二级树形表头合并的方式创建表
+        7. 多级表头合并的方式创建表(兼容二级表头合并的方式)
+        8. 自动设置列宽
+        9. 简单对象表格导出
+ 
  
 ```
    /**
@@ -116,6 +118,45 @@ Excel导出工具类
            List<Map<String, Object>> mergeHeads = getMergeHeads();
            List<Student> scores = getScores();
            ExcelExportUtil.exportMergeHeadExcel(fileName, mergeHeads, scores, response);
+       }
+       
+        /**
+        * 简单对象表格导出
+        */
+       @GetMapping("/exportStudent")
+       @ApiOperation(value = "简单对象表格导出")
+       @ResponseBody
+       public void exportStudent(HttpServletResponse response) {
+           String fileName = "学生信息表";
+           HSSFWorkbook workbook = new HSSFWorkbook();
+           Sheet sheet = workbook.createSheet(fileName);
+           List<Map<String, Integer>> datas = getObjectCells();
+           int line = ExcelExportUtil.createTableTitle(0, "成绩单", 5, sheet, workbook);
+           ExcelExportUtil.createSimpleObjectTable(line, new Student(1, "赵日天", new Date(), 100, 100), datas, sheet, workbook);
+           ExcelExportUtil.exportExcel(fileName, workbook, response);
+       }
+   
+       private List<Map<String, Integer>> getObjectCells() {
+           List<Map<String, Integer>> cells = new ArrayList<>();
+           Map<String, Integer> rowMap = new LinkedHashMap<>();
+           rowMap.put("ID:", 1);
+           rowMap.put("id", 4);
+           cells.add(rowMap);
+   
+           rowMap = new LinkedHashMap<>();
+           rowMap.put("name", 1);
+           rowMap.put("生日:", 1);
+           rowMap.put("birthday", 3);
+           cells.add(rowMap);
+   
+           rowMap = new LinkedHashMap<>();
+           rowMap.put("name", 1);
+           rowMap.put("语文:", 1);
+           rowMap.put("chineseScore", 1);
+           rowMap.put("数学:", 1);
+           rowMap.put("mathScore", 1);
+           cells.add(rowMap);
+           return cells;
        }
    
        private List<Map<String, Object>> getMergeHeads() {
