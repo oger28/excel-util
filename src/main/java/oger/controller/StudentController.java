@@ -126,7 +126,7 @@ public class StudentController {
      * 简单对象表格导出
      */
     @GetMapping("/exportStudent")
-    @ApiOperation(value = "简单对象表格导出")
+    @ApiOperation(value = "无集合属性字段的简单对象表格导出")
     @ResponseBody
     public void exportStudent(HttpServletResponse response) {
         String fileName = "学生信息表";
@@ -140,7 +140,7 @@ public class StudentController {
     }
 
     @GetMapping("/exportStudents2")
-    @ApiOperation(value = "复杂对象表格导出")
+    @ApiOperation(value = "有集合属性字段的复杂对象表格导出")
     @ResponseBody
     public void exportStudents2(HttpServletResponse response) {
         String fileName = "学生成绩信息表";
