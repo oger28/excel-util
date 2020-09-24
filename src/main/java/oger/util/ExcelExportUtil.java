@@ -37,7 +37,8 @@ import java.util.*;
  * 6. 二级树形表头合并的方式创建表
  * 7. 多级表头合并的方式创建表(兼容二级表头合并的方式)
  * 8. 自动设置列宽
- * 9. 简单对象表格导出
+ * 9. 无集合属性字段的简单对象表格导出
+ * 10. 有集合属性字段的复杂对象表格导出
  */
 public class ExcelExportUtil {
 
@@ -147,32 +148,153 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 导出简单对象表格： 对象无集合属性字段
+     * 创建表格： 有集合属性字段的复杂对象
      *
      * @param line
+     * @param names
+     * @param values
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static int createTable(int line, List<Map<String, Object>> names, Map<String, Object> values, Sheet sheet, HSSFWorkbook workbook) {
+        int rows = names.size();
+        //计算最大列数
+        Integer cols = names.stream().map(map -> {
+            int sum = 0;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                Object value = entry.getValue();
+                if (value instanceof Integer) {
+                    sum += (Integer) value;
+                } else if (value instanceof List) {
+                    List<String> fieldNames = (List<String>) value;
+                    sum = fieldNames.size();
+                }
+            }
+            return sum;
+        }).max(Integer::compareTo).get();
+        //创建二维数组
+        String[][] cells = new String[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            cells[i] = new String[cols];
+            Map<String, Object> nameMap = names.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : nameMap.entrySet()) {
+                if (entry.getValue() instanceof Integer) {
+                    Integer value = (Integer) entry.getValue();
+                    while (value > 0) {
+                        cells[i][index] = entry.getKey();
+                        value--;
+                        index++;
+                    }
+                }
+            }
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
+        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
+        String fieldName;
+        String getMethodName;
+        Cell cell;
+        Object fieldValue;
+        Row row;
+        //合并单元格
+        for (int i = 0; i < rows; i++) {
+            row = sheet.createRow(line++);
+            Map<String, Object> nameMap = names.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : nameMap.entrySet()) {
+                if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
+                    index += (Integer) entry.getValue();
+                    continue;
+                }
+                String key = entry.getKey();
+                if (entry.getValue() instanceof Integer) {
+                    Integer value = (Integer) entry.getValue();
+                    if (values.containsKey(key)) {
+                        fieldValue = values.get(key);
+                        if (fieldValue == null) {
+                            row.createCell(index).setCellValue("");
+                        } else if (fieldValue instanceof Date) {
+                            row.createCell(index).setCellValue(sdf.format((Date) fieldValue));
+                        } else {
+                            row.createCell(index).setCellValue(fieldValue.toString());
+                        }
+                    } else {
+                        row.createCell(index).setCellValue(key);
+                    }
+                    int lastRow = i;
+                    while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
+                        lastRow++;
+                    }
+                    if (lastRow > i || value > 1) {
+                        sheet.addMergedRegion(new CellRangeAddress(line - 1, line + lastRow - i - 1, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                        row.getCell(index).setCellStyle(tableBodyCellStyle);
+                    }
+                    index += value;
+                } else if (entry.getValue() instanceof List) {
+                    List<String> fieldNames = (List<String>) entry.getValue();
+                    List dataset = (List) values.get(key);
+                    for (int n = 0; n < dataset.size(); n++) {
+                        Object rowData = dataset.get(n);
+                        if (n > 0) {
+                            row = sheet.createRow(line++);
+                        }
+                        for (int m = 0; m < fieldNames.size(); m++) {
+                            fieldName = fieldNames.get(m);
+                            getMethodName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+                            try {
+                                fieldValue = rowData.getClass().getMethod(getMethodName).invoke(rowData);
+                                cell = row.createCell(m);
+                                if (fieldValue == null) {
+                                    cell.setCellValue("");
+                                } else if (fieldValue instanceof Date) {
+                                    cell.setCellValue(sdf.format((Date) fieldValue));
+                                } else {
+                                    // TODO 需要别的类型可自行扩展
+                                    // 能用toString()直接转string类型的都直接转成string类型
+                                    cell.setCellValue(fieldValue.toString());
+                                }
+                            } catch (Exception e) {
+                                logger.error("导出文件数据失败", e);
+                                // TODO 可替换成自己项目中包装的异常类
+                                throw new RuntimeException("导出文件失败");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return line + 2;
+    }
+
+    /**
+     * 创建表格： 无集合属性字段的简单对象
+     *
+     * @param line
+     * @param names
      * @param t
-     * @param datas
      * @param sheet
      * @param <T>
      * @return
      */
-    public static <T> int createSimpleObjectTable(int line, T t, List<Map<String, Integer>> datas, Sheet sheet, HSSFWorkbook workbook) {
-        int rows = datas.size();
-        Integer cols = datas.stream().map(map -> {
+    public static <T> int createTable(int line, List<Map<String, Integer>> names, T t, Sheet sheet, HSSFWorkbook workbook) {
+        int rows = names.size();
+        //计算最大列数
+        Integer cols = names.stream().map(map -> {
             int sum = 0;
             for (Map.Entry<String, Integer> entry : map.entrySet()) {
                 sum += entry.getValue();
             }
             return sum;
         }).max(Integer::compareTo).get();
-        //创建表头二维数组
+        //创建二维数组
         String[][] cells = new String[rows][cols];
         for (int i = 0; i < rows; i++) {
             cells[i] = new String[cols];
-            Map<String, Integer> dataMap = datas.get(i);
+            Map<String, Integer> nameMap = names.get(i);
             int index = 0;
-            for (Map.Entry<String, Integer> entry : dataMap.entrySet()) {
-                Integer value = Integer.valueOf(entry.getValue().toString());
+            for (Map.Entry<String, Integer> entry : nameMap.entrySet()) {
+                Integer value = entry.getValue();
                 while (value > 0) {
                     cells[i][index] = entry.getKey();
                     value--;
@@ -187,24 +309,25 @@ public class ExcelExportUtil {
         //合并单元格
         for (int i = 0; i < rows; i++) {
             Row row = sheet.createRow(line + i);
-            Map<String, Integer> dataMap = datas.get(i);
+            Map<String, Integer> nameMap = names.get(i);
             int index = 0;
-            for (Map.Entry<String, Integer> entry : dataMap.entrySet()) {
+            for (Map.Entry<String, Integer> entry : nameMap.entrySet()) {
+                Integer value = entry.getValue();
                 if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
-                    index++;
+                    index += value;
                     continue;
                 }
-                Integer value = entry.getValue();
                 String key = entry.getKey();
                 getMethodName = "get" + key.substring(0, 1).toUpperCase() + key.substring(1);
                 try {
                     fieldValue = t.getClass().getMethod(getMethodName).invoke(t);
                     if (fieldValue == null) {
-                        fieldValue = "";
+                        row.createCell(index).setCellValue("");
                     } else if (fieldValue instanceof Date) {
-                        fieldValue = sdf.format((Date) fieldValue);
+                        row.createCell(index).setCellValue(sdf.format((Date) fieldValue));
+                    } else {
+                        row.createCell(index).setCellValue(fieldValue.toString());
                     }
-                    row.createCell(index).setCellValue(fieldValue.toString());
                 } catch (NoSuchMethodException e) {
                     row.createCell(index).setCellValue(key);
                 } catch (Exception e) {
@@ -223,7 +346,7 @@ public class ExcelExportUtil {
                 index += value;
             }
         }
-        return line + rows;
+        return line + rows + 2;
     }
 
     /**
@@ -242,21 +365,21 @@ public class ExcelExportUtil {
         int cols = mergeHeads.get(rows - 1).size();
         String[] fieldNames = new String[cols];
         //创建表头二维数组
-        String[][] heads = new String[rows][cols];
+        String[][] cells = new String[rows][cols];
         for (int i = 0; i < rows; i++) {
-            heads[i] = new String[cols];
+            cells[i] = new String[cols];
             Map<String, Object> mergeHeadMap = mergeHeads.get(i);
             int index = 0;
             for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
                 if (i < rows - 1) {
                     Integer value = Integer.valueOf(entry.getValue().toString());
                     while (value > 0) {
-                        heads[i][index] = entry.getKey();
+                        cells[i][index] = entry.getKey();
                         value--;
                         index++;
                     }
                 } else {
-                    heads[i][index] = entry.getValue().toString();
+                    cells[i][index] = entry.getValue().toString();
                     fieldNames[index] = entry.getKey();
                     index++;
                 }
@@ -268,7 +391,7 @@ public class ExcelExportUtil {
             Map<String, Object> mergeHeadMap = mergeHeads.get(i);
             int index = 0;
             for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
-                if (i > 0 && StringUtils.equals(heads[i - 1][index], heads[i][index])) {
+                if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
                     index++;
                     continue;
                 }
@@ -277,7 +400,7 @@ public class ExcelExportUtil {
                     row.createCell(index).setCellValue(entry.getKey());
                     row.getCell(index).setCellStyle(tableHeadCellStyle);
                     int lastRow = i;
-                    while (lastRow < rows - 1 && StringUtils.equals(heads[lastRow][index], heads[lastRow + 1][index])) {
+                    while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
                         lastRow++;
                     }
                     if (lastRow > i || value > 1) {
@@ -339,20 +462,6 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 创建表： 有表标题
-     *
-     * @param tableName
-     * @param headMap
-     * @param dataset
-     * @param sheet
-     * @param workbook
-     * @return
-     */
-    public static int createTable(String tableName, Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
-        return createTable(0, tableName, headMap, dataset, sheet, workbook);
-    }
-
-    /**
      * 创建表： 有表标题 从指定行开始
      *
      * @param line      起始行
@@ -374,19 +483,6 @@ public class ExcelExportUtil {
         }
         line = createTableHead(line, tableName, headNames, sheet, workbook);
         return createTableBody(line, sheet, fieldNames, dataset);
-    }
-
-    /**
-     * 创建表： 无表标题
-     *
-     * @param headMap
-     * @param dataset
-     * @param sheet
-     * @param workbook
-     * @return
-     */
-    public static int createTable(Map<String, String> headMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
-        return createTable(0, headMap, dataset, sheet, workbook);
     }
 
     /**

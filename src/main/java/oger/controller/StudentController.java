@@ -56,7 +56,7 @@ public class StudentController {
         String sheetName = "学生列表";
         String tableName = "学生列表";
         Sheet sheet1 = workbook.createSheet(sheetName);
-        ExcelExportUtil.createTable(tableName, headMap, getStudents(), sheet1, workbook);
+        ExcelExportUtil.createTable(0, tableName, headMap, getStudents(), sheet1, workbook);
 
         sheetName = "教师列表";
         tableName = "教师列表";
@@ -64,7 +64,7 @@ public class StudentController {
         headMap.put("name", "姓名");
         headMap.put("subject", "科目");
         Sheet sheet2 = workbook.createSheet(sheetName);
-        ExcelExportUtil.createTable(tableName, headMap, getTeachers(), sheet2, workbook);
+        ExcelExportUtil.createTable(0, tableName, headMap, getTeachers(), sheet2, workbook);
 
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
@@ -133,26 +133,124 @@ public class StudentController {
         HSSFWorkbook workbook = new HSSFWorkbook();
         Sheet sheet = workbook.createSheet(fileName);
         List<Map<String, Integer>> datas = getObjectCells();
-        int line = ExcelExportUtil.createTableTitle(0, "成绩单", 5, sheet, workbook);
-        ExcelExportUtil.createSimpleObjectTable(line, new Student(1, "赵日天", new Date(), 100, 100), datas, sheet, workbook);
+        Student student = new Student(1, "赵日天", new Date(), 100, 100);
+        int line = ExcelExportUtil.createTableTitle(0, "成绩单", 6, sheet, workbook);
+        ExcelExportUtil.createTable(line, datas, student, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
+    }
+
+    @GetMapping("/exportStudents2")
+    @ApiOperation(value = "复杂对象表格导出")
+    @ResponseBody
+    public void exportStudents2(HttpServletResponse response) {
+        String fileName = "学生成绩信息表";
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        Sheet sheet = workbook.createSheet(fileName);
+        Map<String, Object> students = getStudents2();
+        List<Map<String, Object>> names = getStudentInfo();
+        int line = ExcelExportUtil.createTableTitle(0, "成绩单", 3, sheet, workbook);
+        ExcelExportUtil.createTable(line, names, students, sheet, workbook);
+        ExcelExportUtil.exportExcel(fileName, workbook, response);
+    }
+
+    private List<Map<String, Object>> getStudentInfo() {
+        List<Map<String, Object>> list = new ArrayList<>();
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("班级", 1);
+        map.put("class", 2);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("序号", 1);
+        map.put("成绩", 2);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("序号", 1);
+        map.put("姓名", 1);
+        map.put("语文成绩", 1);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        List<String> filedNames = new ArrayList<>();
+        filedNames.add("id");
+        filedNames.add("name");
+        filedNames.add("chineseScore");
+        map.put("students", filedNames);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("合计：", 2);
+        map.put("totalChineseScore", 1);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("序号", 1);
+        map.put("成绩", 2);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("序号", 1);
+        map.put("姓名", 1);
+        map.put("数学成绩", 1);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        filedNames = new ArrayList<>();
+        filedNames.add("id");
+        filedNames.add("name");
+        filedNames.add("mathScore");
+        map.put("students", filedNames);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("合计：", 2);
+        map.put("totalMathScore", 1);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("总计：", 2);
+        map.put("totalScore", 1);
+        list.add(map);
+
+        map = new LinkedHashMap<>();
+        map.put("总计：", 2);
+        map.put("totalScore", 1);
+        list.add(map);
+        return list;
+    }
+
+    private Map<String, Object> getStudents2() {
+        Map<String, Object> map = new HashMap<>();
+        map.put("class", "奥数班");
+        List<Student> scores = getScores();
+        map.put("students", scores);
+        int totalChineseScore = scores.stream().mapToInt(Student::getChineseScore).sum();
+        map.put("totalChineseScore", totalChineseScore);
+        int totalMathScore = scores.stream().mapToInt(Student::getMathScore).sum();
+        map.put("totalMathScore", totalMathScore);
+        map.put("totalScore", totalMathScore + totalChineseScore);
+        return map;
     }
 
     private List<Map<String, Integer>> getObjectCells() {
         List<Map<String, Integer>> cells = new ArrayList<>();
         Map<String, Integer> rowMap = new LinkedHashMap<>();
         rowMap.put("ID:", 1);
-        rowMap.put("id", 4);
+        rowMap.put("id", 5);
         cells.add(rowMap);
 
         rowMap = new LinkedHashMap<>();
-        rowMap.put("name", 1);
+        rowMap.put("name", 2);
         rowMap.put("生日:", 1);
         rowMap.put("birthday", 3);
         cells.add(rowMap);
 
         rowMap = new LinkedHashMap<>();
-        rowMap.put("name", 1);
+        rowMap.put("name", 2);
         rowMap.put("语文:", 1);
         rowMap.put("chineseScore", 1);
         rowMap.put("数学:", 1);
