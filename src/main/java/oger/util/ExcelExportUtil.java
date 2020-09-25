@@ -45,7 +45,7 @@ public class ExcelExportUtil {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelExportUtil.class);
     private static int DEFAULT_COL_WIDTH = 10;   // 默认列宽
-    public static String DEFAULT_DATE_PATTERN = "yyyy年MM月dd日";//默认日期格式
+    public static SimpleDateFormat DEFAULT_FORMAT = new SimpleDateFormat("yyyy年MM月dd日");
 
     /**
      * 自定义模式导出excel： 需自己创建workbook
@@ -206,13 +206,8 @@ public class ExcelExportUtil {
                 }
             }
         }
-        SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
         CellStyle tableBodyRangeCellStyle = getTableBodyRangeCellStyle(workbook);
         CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
-        String fieldName;
-        String getMethodName;
-        Cell cell;
-        Object fieldValue;
         Row row;
         //创建表
         for (int i = 0; i < rows; i++) {
@@ -235,14 +230,7 @@ public class ExcelExportUtil {
                         continue;
                     }
                     if (values.containsKey(key)) {
-                        fieldValue = values.get(key);
-                        if (fieldValue == null) {
-                            row.getCell(index).setCellValue("");
-                        } else if (fieldValue instanceof Date) {
-                            row.getCell(index).setCellValue(sdf.format((Date) fieldValue));
-                        } else {
-                            row.getCell(index).setCellValue(fieldValue.toString());
-                        }
+                        setCellValue(row.getCell(index), values.get(key));
                     } else {
                         row.getCell(index).setCellValue(key);
                     }
@@ -265,26 +253,7 @@ public class ExcelExportUtil {
                             row = sheet.createRow(line++);
                         }
                         for (int m = 0; m < fieldNames.size(); m++) {
-                            fieldName = fieldNames.get(m);
-                            getMethodName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-                            try {
-                                fieldValue = rowData.getClass().getMethod(getMethodName).invoke(rowData);
-                                cell = row.createCell(m);
-                                cell.setCellStyle(tableBodyCellStyle);
-                                if (fieldValue == null) {
-                                    cell.setCellValue("");
-                                } else if (fieldValue instanceof Date) {
-                                    cell.setCellValue(sdf.format((Date) fieldValue));
-                                } else {
-                                    //  需要别的类型可自行扩展
-                                    // 能用toString()直接转string类型的都直接转成string类型
-                                    cell.setCellValue(fieldValue.toString());
-                                }
-                            } catch (Exception e) {
-                                logger.error("导出文件数据失败", e);
-                                //  可替换成自己项目中包装的异常类
-                                throw new RuntimeException("导出文件失败");
-                            }
+                            setCellValue(fieldNames.get(m), rowData, row.createCell(m), tableBodyCellStyle);
                         }
                     }
                 }
@@ -328,11 +297,8 @@ public class ExcelExportUtil {
                 }
             }
         }
-        SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
         CellStyle tableBodyRangeCellStyle = getTableBodyRangeCellStyle(workbook);
         CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
-        String getMethodName;
-        Object fieldValue;
         //创建表
         for (int i = 0; i < rows; i++) {
             Row row = sheet.createRow(line + i);
@@ -351,24 +317,7 @@ public class ExcelExportUtil {
                     index += value;
                     continue;
                 }
-                String key = entry.getKey();
-                getMethodName = "get" + key.substring(0, 1).toUpperCase() + key.substring(1);
-                try {
-                    fieldValue = t.getClass().getMethod(getMethodName).invoke(t);
-                    if (fieldValue == null) {
-                        row.getCell(index).setCellValue("");
-                    } else if (fieldValue instanceof Date) {
-                        row.getCell(index).setCellValue(sdf.format((Date) fieldValue));
-                    } else {
-                        row.getCell(index).setCellValue(fieldValue.toString());
-                    }
-                } catch (NoSuchMethodException e) {
-                    row.getCell(index).setCellValue(key);
-                } catch (Exception e) {
-                    logger.error("导出文件失败", e);
-                    //  可替换成自己项目中包装的异常类
-                    throw new RuntimeException("导出文件失败");
-                }
+                setCellValue(entry.getKey(), t, row.getCell(index), tableBodyCellStyle);
                 //合并单元格
                 int lastRow = i;
                 while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
@@ -625,42 +574,17 @@ public class ExcelExportUtil {
     public static int createTableBody(int line, String[] fieldNames, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         Iterator it = dataset.iterator();
         Object rowData;
-        String fieldName;
-        String getMethodName;
         Row row;
-        Cell cell;
-        Object value;
         int length;
         int[] headLens = new int[fieldNames.length];
-        SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
-//        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);   //表体需要设置边框时可放开
+//        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);   //表体需要设置边框时可传入setCellValue方法
         while (it.hasNext()) {
-            row = sheet.createRow(line);
-            line++;
+            row = sheet.createRow(line++);
             rowData = it.next();
             for (int i = 0; i < fieldNames.length; i++) {
-                fieldName = fieldNames[i];
-                getMethodName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-                try {
-                    value = rowData.getClass().getMethod(getMethodName).invoke(rowData);
-                    cell = row.createCell(i);
-//                    cell.setCellStyle(tableBodyCellStyle);    //表体需要设置边框时可放开
-                    if (value == null) {
-                        cell.setCellValue("");
-                    } else if (value instanceof Date) {
-                        cell.setCellValue(sdf.format((Date) value));
-                    } else {
-                        //  需要别的类型可自行扩展
-                        // 能用toString()直接转string类型的都直接转成string类型
-                        cell.setCellValue(value.toString());
-                    }
-                    length = cell.getStringCellValue().getBytes().length;
-                    headLens[i] = length > headLens[i] ? length : headLens[i];
-                } catch (Exception e) {
-                    logger.error("导出文件数据失败", e);
-                    //  可替换成自己项目中包装的异常类
-                    throw new RuntimeException("导出文件失败");
-                }
+                setCellValue(fieldNames[i], rowData, row.createCell(i), null);
+                length = row.getCell(i).getStringCellValue().getBytes().length;
+                headLens[i] = length > headLens[i] ? length : headLens[i];
             }
         }
         // 根据数据自动设置列宽
@@ -670,6 +594,33 @@ public class ExcelExportUtil {
             sheet.setColumnWidth(i, length * 256);
         }
         return line + 2;
+    }
+
+    private static void setCellValue(String fieldName, Object rowData, Cell cell, CellStyle cellStyle) {
+        String getMethodName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+        try {
+            Object value = rowData.getClass().getMethod(getMethodName).invoke(rowData);
+            cell.setCellStyle(cellStyle);
+            setCellValue(cell, value);
+        } catch (NoSuchMethodException e) {
+            cell.setCellValue(fieldName);
+        } catch (Exception e) {
+            logger.error("导出文件数据失败", e);
+            //  可替换成自己项目中包装的异常类
+            throw new RuntimeException("导出文件失败");
+        }
+    }
+
+    private static void setCellValue(Cell cell, Object value) {
+        if (value == null) {
+            cell.setCellValue("");
+        } else if (value instanceof Date) {
+            cell.setCellValue(DEFAULT_FORMAT.format((Date) value));
+        } else {
+            //  需要别的类型可自行扩展
+            // 能用toString()直接转string类型的都直接转成string类型
+            cell.setCellValue(value.toString());
+        }
     }
 
     /**
