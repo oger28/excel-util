@@ -25,7 +25,7 @@ import java.util.*;
  * 1. 样式最简化原则
  * 2. 约定大于规定原则
  * <p>
- * 优点：
+ * 功能介绍：
  * 1. Controller 每一个接口对应一个demo
  * 2. 可任意创建多个sheet
  * 3. 可在任意位置创建table
