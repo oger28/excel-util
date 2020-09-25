@@ -28,7 +28,7 @@ import java.util.*;
  * 功能介绍：
  * 1. Controller 每一个接口对应一个demo
  * 2. 可任意创建多个sheet
- * 3. 可在任意位置创建table
+ * 3. 可在sheet中任意行开始创建table
  * 4. 可按指定顺序导出实体类任意字段
  * - 同一字段在不同table中名称可不同
  * - 可通过Map<String,String> 的方式传入你想导出的字段
@@ -66,7 +66,7 @@ public class ExcelExportUtil {
             out.flush();
         } catch (Exception e) {
             logger.error("导出文件失败", e);
-            // TODO 可替换成自己项目中包装的异常类
+            //  可替换成自己项目中包装的异常类
             throw new RuntimeException("导出文件失败");
         } finally {
             try {
@@ -88,7 +88,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 单sheet单表模式快捷导出excel: 有sheet标题 有表标题
+     * 快捷导出excel: 有sheet标题 有表标题
      *
      * @param fileName
      * @param sheetName
@@ -106,7 +106,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 单sheet单表模式快捷导出excel: 无sheet标题 无表标题
+     * 快捷导出excel: 无sheet标题 无表标题
      *
      * @param fileName
      * @param headMap
@@ -121,7 +121,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 单sheet单表模式快捷导出excel: 二级合并表头 无sheet标题 无表标题
+     * 快捷导出excel: 二级合并表头 无sheet标题 无表标题
      *
      * @param fileName
      * @param dataset
@@ -135,7 +135,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 单sheet单表模式快捷导出excel: 多级合并表头 无sheet标题 无表标题
+     * 快捷导出excel: 多级合并表头 无sheet标题 无表标题
      *
      * @param fileName
      * @param dataset
@@ -149,7 +149,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 无集合属性字段的简单对象快捷导出excel
+     * 快捷导出excel:无集合属性字段的简单对象快捷导出excel
      *
      * @param fileName
      * @param names
@@ -276,13 +276,13 @@ public class ExcelExportUtil {
                                 } else if (fieldValue instanceof Date) {
                                     cell.setCellValue(sdf.format((Date) fieldValue));
                                 } else {
-                                    // TODO 需要别的类型可自行扩展
+                                    //  需要别的类型可自行扩展
                                     // 能用toString()直接转string类型的都直接转成string类型
                                     cell.setCellValue(fieldValue.toString());
                                 }
                             } catch (Exception e) {
                                 logger.error("导出文件数据失败", e);
-                                // TODO 可替换成自己项目中包装的异常类
+                                //  可替换成自己项目中包装的异常类
                                 throw new RuntimeException("导出文件失败");
                             }
                         }
@@ -366,7 +366,7 @@ public class ExcelExportUtil {
                     row.getCell(index).setCellValue(key);
                 } catch (Exception e) {
                     logger.error("导出文件失败", e);
-                    // TODO 可替换成自己项目中包装的异常类
+                    //  可替换成自己项目中包装的异常类
                     throw new RuntimeException("导出文件失败");
                 }
                 //合并单元格
@@ -395,7 +395,7 @@ public class ExcelExportUtil {
      * @return
      */
     public static int createMergeHeadTable(int line, List<Map<String, Object>> mergeHeads, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
-        CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
+        CellStyle tableHeadCellStyle = getTableHeadRangeCellStyle(workbook);
         int rows = mergeHeads.size();
         int cols = mergeHeads.get(rows - 1).size();
         String[] fieldNames = new String[cols];
@@ -476,7 +476,7 @@ public class ExcelExportUtil {
     public static int createMergeHeadTable(int line, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         Row row1 = sheet.createRow(line);
         Row row2 = sheet.createRow(line + 1);
-        CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
+        CellStyle tableHeadCellStyle = getTableHeadRangeCellStyle(workbook);
         int index = 0;
         List<String> fieldNames = new ArrayList<>();
         //创建表头
@@ -633,8 +633,7 @@ public class ExcelExportUtil {
         int length;
         int[] headLens = new int[fieldNames.length];
         SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
-        //表体需要设置边框时可放开
-//        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
+//        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);   //表体需要设置边框时可放开
         while (it.hasNext()) {
             row = sheet.createRow(line);
             line++;
@@ -645,13 +644,13 @@ public class ExcelExportUtil {
                 try {
                     value = rowData.getClass().getMethod(getMethodName).invoke(rowData);
                     cell = row.createCell(i);
-//                    cell.setCellStyle(tableBodyCellStyle);
+//                    cell.setCellStyle(tableBodyCellStyle);    //表体需要设置边框时可放开
                     if (value == null) {
                         cell.setCellValue("");
                     } else if (value instanceof Date) {
                         cell.setCellValue(sdf.format((Date) value));
                     } else {
-                        // TODO 需要别的类型可自行扩展
+                        //  需要别的类型可自行扩展
                         // 能用toString()直接转string类型的都直接转成string类型
                         cell.setCellValue(value.toString());
                     }
@@ -659,7 +658,7 @@ public class ExcelExportUtil {
                     headLens[i] = length > headLens[i] ? length : headLens[i];
                 } catch (Exception e) {
                     logger.error("导出文件数据失败", e);
-                    // TODO 可替换成自己项目中包装的异常类
+                    //  可替换成自己项目中包装的异常类
                     throw new RuntimeException("导出文件失败");
                 }
             }
@@ -744,12 +743,12 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 获取表头单元格样式
+     * 获取表头合并单元格样式
      *
      * @param workbook
      * @return
      */
-    public static CellStyle getTableHeadCellStyle(HSSFWorkbook workbook) {
+    public static CellStyle getTableHeadRangeCellStyle(HSSFWorkbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
         style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中
@@ -765,7 +764,24 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 获取表体单元格样式
+     * 获取表头单元格样式
+     *
+     * @param workbook
+     * @return
+     */
+    public static CellStyle getTableHeadCellStyle(HSSFWorkbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
+        style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中
+        style.setWrapText(true);
+        HSSFFont font = workbook.createFont();
+        font.setBold(true);
+        style.setFont(font);
+        return style;
+    }
+
+    /**
+     * 获取表体合并单元格样式
      *
      * @param workbook
      * @return
@@ -781,6 +797,12 @@ public class ExcelExportUtil {
         return style;
     }
 
+    /**
+     * 获取表体单元格样式
+     *
+     * @param workbook
+     * @return
+     */
     public static CellStyle getTableBodyCellStyle(HSSFWorkbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setBorderBottom(BorderStyle.THIN);

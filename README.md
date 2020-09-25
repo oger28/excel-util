@@ -11,7 +11,7 @@ Excel导出工具类
     功能介绍：
         1. Controller 每一个接口对应一个demo
         2. 可任意创建多个sheet
-        3. 可在任意位置创建table
+        3. 可在sheet中任意行开始创建table
         4. 可按指定顺序导出实体类任意字段
         - 同一字段在不同table中名称可不同
         - 可通过Map<String,String> 的方式传入你想导出的字段
