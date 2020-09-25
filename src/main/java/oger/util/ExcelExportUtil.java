@@ -39,6 +39,7 @@ import java.util.*;
  * 8. 自动设置列宽
  * 9. 无集合属性字段的简单对象表格导出
  * 10. 有集合属性字段的复杂对象表格导出
+ * 11. 表格加边框
  */
 public class ExcelExportUtil {
 
@@ -148,6 +149,21 @@ public class ExcelExportUtil {
     }
 
     /**
+     * 无集合属性字段的简单对象快捷导出excel
+     *
+     * @param fileName
+     * @param names
+     * @param t
+     * @param response
+     */
+    public static <T> void exportExcel(String fileName, List<Map<String, Integer>> names, T t, HttpServletResponse response) {
+        HSSFWorkbook workbook = new HSSFWorkbook();
+        HSSFSheet sheet = workbook.createSheet(fileName);
+        createTable(0, names, t, sheet, workbook);
+        exportExcel(fileName, workbook, response);
+    }
+
+    /**
      * 创建表格： 有集合属性字段的复杂对象
      *
      * @param line
@@ -191,47 +207,56 @@ public class ExcelExportUtil {
             }
         }
         SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
+        CellStyle tableBodyRangeCellStyle = getTableBodyRangeCellStyle(workbook);
         CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
         String fieldName;
         String getMethodName;
         Cell cell;
         Object fieldValue;
         Row row;
-        //合并单元格
+        //创建表
         for (int i = 0; i < rows; i++) {
             row = sheet.createRow(line++);
             Map<String, Object> nameMap = names.get(i);
             int index = 0;
             for (Map.Entry<String, Object> entry : nameMap.entrySet()) {
-                if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
-                    index += (Integer) entry.getValue();
-                    continue;
-                }
                 String key = entry.getKey();
-                if (entry.getValue() instanceof Integer) {
+                if (entry.getValue() instanceof Integer) {  //非集合
+                    //创建单元格
                     Integer value = (Integer) entry.getValue();
+                    int v = 0;
+                    while (v < value) {
+                        row.createCell(index + v).setCellStyle(tableBodyCellStyle);
+                        v++;
+                    }
+                    //赋值
+                    if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
+                        index += value;
+                        continue;
+                    }
                     if (values.containsKey(key)) {
                         fieldValue = values.get(key);
                         if (fieldValue == null) {
-                            row.createCell(index).setCellValue("");
+                            row.getCell(index).setCellValue("");
                         } else if (fieldValue instanceof Date) {
-                            row.createCell(index).setCellValue(sdf.format((Date) fieldValue));
+                            row.getCell(index).setCellValue(sdf.format((Date) fieldValue));
                         } else {
-                            row.createCell(index).setCellValue(fieldValue.toString());
+                            row.getCell(index).setCellValue(fieldValue.toString());
                         }
                     } else {
-                        row.createCell(index).setCellValue(key);
+                        row.getCell(index).setCellValue(key);
                     }
+                    //合并单元格
                     int lastRow = i;
                     while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
                         lastRow++;
                     }
                     if (lastRow > i || value > 1) {
                         sheet.addMergedRegion(new CellRangeAddress(line - 1, line + lastRow - i - 1, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
-                        row.getCell(index).setCellStyle(tableBodyCellStyle);
+                        row.getCell(index).setCellStyle(tableBodyRangeCellStyle);
                     }
                     index += value;
-                } else if (entry.getValue() instanceof List) {
+                } else if (entry.getValue() instanceof List) {  //集合
                     List<String> fieldNames = (List<String>) entry.getValue();
                     List dataset = (List) values.get(key);
                     for (int n = 0; n < dataset.size(); n++) {
@@ -245,6 +270,7 @@ public class ExcelExportUtil {
                             try {
                                 fieldValue = rowData.getClass().getMethod(getMethodName).invoke(rowData);
                                 cell = row.createCell(m);
+                                cell.setCellStyle(tableBodyCellStyle);
                                 if (fieldValue == null) {
                                     cell.setCellValue("");
                                 } else if (fieldValue instanceof Date) {
@@ -303,16 +329,24 @@ public class ExcelExportUtil {
             }
         }
         SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
+        CellStyle tableBodyRangeCellStyle = getTableBodyRangeCellStyle(workbook);
         CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
         String getMethodName;
         Object fieldValue;
-        //合并单元格
+        //创建表
         for (int i = 0; i < rows; i++) {
             Row row = sheet.createRow(line + i);
             Map<String, Integer> nameMap = names.get(i);
             int index = 0;
             for (Map.Entry<String, Integer> entry : nameMap.entrySet()) {
+                //创建单元格
                 Integer value = entry.getValue();
+                int v = 0;
+                while (v < value) {
+                    row.createCell(index + v).setCellStyle(tableBodyCellStyle);
+                    v++;
+                }
+                //赋值
                 if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
                     index += value;
                     continue;
@@ -322,26 +356,27 @@ public class ExcelExportUtil {
                 try {
                     fieldValue = t.getClass().getMethod(getMethodName).invoke(t);
                     if (fieldValue == null) {
-                        row.createCell(index).setCellValue("");
+                        row.getCell(index).setCellValue("");
                     } else if (fieldValue instanceof Date) {
-                        row.createCell(index).setCellValue(sdf.format((Date) fieldValue));
+                        row.getCell(index).setCellValue(sdf.format((Date) fieldValue));
                     } else {
-                        row.createCell(index).setCellValue(fieldValue.toString());
+                        row.getCell(index).setCellValue(fieldValue.toString());
                     }
                 } catch (NoSuchMethodException e) {
-                    row.createCell(index).setCellValue(key);
+                    row.getCell(index).setCellValue(key);
                 } catch (Exception e) {
                     logger.error("导出文件失败", e);
                     // TODO 可替换成自己项目中包装的异常类
                     throw new RuntimeException("导出文件失败");
                 }
+                //合并单元格
                 int lastRow = i;
                 while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
                     lastRow++;
                 }
                 if (lastRow > i || value > 1) {
                     sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
-                    row.getCell(index).setCellStyle(tableBodyCellStyle);
+                    row.getCell(index).setCellStyle(tableBodyRangeCellStyle);
                 }
                 index += value;
             }
@@ -391,14 +426,25 @@ public class ExcelExportUtil {
             Map<String, Object> mergeHeadMap = mergeHeads.get(i);
             int index = 0;
             for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
+                //创建单元格
+                if (i < rows - 1) {
+                    Integer value = (Integer) entry.getValue();
+                    int v = 0;
+                    while (v < value) {
+                        row.createCell(index + v).setCellStyle(tableHeadCellStyle);
+                        v++;
+                    }
+                } else {
+                    row.createCell(index).setCellStyle(tableHeadCellStyle);
+                }
+                //赋值并合并单元格
                 if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
                     index++;
                     continue;
                 }
                 if (i < rows - 1) {
-                    Integer value = Integer.valueOf(entry.getValue().toString());
-                    row.createCell(index).setCellValue(entry.getKey());
-                    row.getCell(index).setCellStyle(tableHeadCellStyle);
+                    Integer value = (Integer) entry.getValue();
+                    row.getCell(index).setCellValue(entry.getKey());
                     int lastRow = i;
                     while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
                         lastRow++;
@@ -408,14 +454,13 @@ public class ExcelExportUtil {
                     }
                     index += value;
                 } else {
-                    row.createCell(index).setCellValue(entry.getValue().toString());
-                    row.getCell(index).setCellStyle(tableHeadCellStyle);
+                    row.getCell(index).setCellValue(entry.getValue().toString());
                     index++;
                 }
             }
         }
         //创建表体
-        return createTableBody(line + rows, sheet, fieldNames, dataset);
+        return createTableBody(line + rows, fieldNames, dataset, sheet, workbook);
     }
 
     /**
@@ -431,18 +476,25 @@ public class ExcelExportUtil {
     public static int createMergeHeadTable(int line, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         Row row1 = sheet.createRow(line);
         Row row2 = sheet.createRow(line + 1);
-        CellStyle tableHeaderCellStyle = getTableHeadCellStyle(workbook);
+        CellStyle tableHeadCellStyle = getTableHeadCellStyle(workbook);
         int index = 0;
         List<String> fieldNames = new ArrayList<>();
         //创建表头
         for (Map.Entry<String, Map<String, String>> entry : mergeHeadMap.entrySet()) {
+            //创建单元格
             String key = entry.getKey();
             Map<String, String> value = entry.getValue();
+            int v = 0;
+            while (v < value.size()) {
+                row1.createCell(index + v).setCellStyle(tableHeadCellStyle);
+                row2.createCell(index + v).setCellStyle(tableHeadCellStyle);
+                v++;
+            }
+            //赋值并合并单元格
             if (value.size() < 1) {
                 continue;
             }
-            row1.createCell(index).setCellValue(key);
-            row1.getCell(index).setCellStyle(tableHeaderCellStyle);
+            row1.getCell(index).setCellValue(key);
             if (value.size() == 1) {
                 sheet.addMergedRegion(new CellRangeAddress(line, line + 1, index, index));//起始行号，终止行号， 起始列号，终止列号
                 fieldNames.addAll(value.keySet());
@@ -450,15 +502,14 @@ public class ExcelExportUtil {
             } else {
                 sheet.addMergedRegion(new CellRangeAddress(line, line, index, index + value.size() - 1));//起始行号，终止行号， 起始列号，终止列号
                 for (Map.Entry<String, String> child : value.entrySet()) {
-                    row2.createCell(index).setCellValue(child.getValue());
-                    row2.getCell(index).setCellStyle(tableHeaderCellStyle);
+                    row2.getCell(index).setCellValue(child.getValue());
                     fieldNames.add(child.getKey());
                     index++;
                 }
             }
         }
         //创建表体
-        return createTableBody(line + 2, sheet, fieldNames.stream().toArray(String[]::new), dataset);
+        return createTableBody(line + 2, fieldNames.stream().toArray(String[]::new), dataset, sheet, workbook);
     }
 
     /**
@@ -482,7 +533,7 @@ public class ExcelExportUtil {
             i++;
         }
         line = createTableHead(line, tableName, headNames, sheet, workbook);
-        return createTableBody(line, sheet, fieldNames, dataset);
+        return createTableBody(line, fieldNames, dataset, sheet, workbook);
     }
 
     /**
@@ -505,7 +556,7 @@ public class ExcelExportUtil {
             i++;
         }
         line = createTableHead(line, headNames, sheet, workbook);
-        return createTableBody(line, sheet, fieldNames, dataset);
+        return createTableBody(line, fieldNames, dataset, sheet, workbook);
     }
 
     /**
@@ -571,7 +622,7 @@ public class ExcelExportUtil {
      * @param dataset
      * @return 下一行
      */
-    public static int createTableBody(int line, Sheet sheet, String[] fieldNames, Collection dataset) {
+    public static int createTableBody(int line, String[] fieldNames, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         Iterator it = dataset.iterator();
         Object rowData;
         String fieldName;
@@ -582,6 +633,8 @@ public class ExcelExportUtil {
         int length;
         int[] headLens = new int[fieldNames.length];
         SimpleDateFormat sdf = new SimpleDateFormat(DEFAULT_DATE_PATTERN);
+        //表体需要设置边框时可放开
+//        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
         while (it.hasNext()) {
             row = sheet.createRow(line);
             line++;
@@ -592,6 +645,7 @@ public class ExcelExportUtil {
                 try {
                     value = rowData.getClass().getMethod(getMethodName).invoke(rowData);
                     cell = row.createCell(i);
+//                    cell.setCellStyle(tableBodyCellStyle);
                     if (value == null) {
                         cell.setCellValue("");
                     } else if (value instanceof Date) {
@@ -700,6 +754,10 @@ public class ExcelExportUtil {
         style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
         style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中
         style.setWrapText(true);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setBorderTop(BorderStyle.THIN);
         HSSFFont font = workbook.createFont();
         font.setBold(true);
         style.setFont(font);
@@ -712,10 +770,23 @@ public class ExcelExportUtil {
      * @param workbook
      * @return
      */
-    public static CellStyle getTableBodyCellStyle(HSSFWorkbook workbook) {
+    public static CellStyle getTableBodyRangeCellStyle(HSSFWorkbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.CENTER);// 左右居中
         style.setVerticalAlignment(VerticalAlignment.CENTER);// 上下居中
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setBorderTop(BorderStyle.THIN);
+        return style;
+    }
+
+    public static CellStyle getTableBodyCellStyle(HSSFWorkbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setBorderTop(BorderStyle.THIN);
         return style;
     }
 }
