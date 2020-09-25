@@ -230,7 +230,7 @@ public class ExcelExportUtil {
                         continue;
                     }
                     if (values.containsKey(key)) {
-                        setCellValue(row.getCell(index), values.get(key));
+                        setCellValue(values.get(key), row.getCell(index));
                     } else {
                         row.getCell(index).setCellValue(key);
                     }
@@ -601,7 +601,7 @@ public class ExcelExportUtil {
         try {
             Object value = rowData.getClass().getMethod(getMethodName).invoke(rowData);
             cell.setCellStyle(cellStyle);
-            setCellValue(cell, value);
+            setCellValue(value, cell);
         } catch (NoSuchMethodException e) {
             cell.setCellValue(fieldName);
         } catch (Exception e) {
@@ -611,7 +611,7 @@ public class ExcelExportUtil {
         }
     }
 
-    private static void setCellValue(Cell cell, Object value) {
+    private static void setCellValue(Object value, Cell cell) {
         if (value == null) {
             cell.setCellValue("");
         } else if (value instanceof Date) {
