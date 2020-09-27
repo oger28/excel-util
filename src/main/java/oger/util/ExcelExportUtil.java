@@ -606,25 +606,21 @@ public class ExcelExportUtil {
         try {
             Object value = obj.getClass().getMethod(getMethodName).invoke(obj);
             cell.setCellStyle(cellStyle);
-            setCellValue(value, cell);
+            if (value == null) {
+                cell.setCellValue("");
+            } else if (value instanceof Date) {
+                cell.setCellValue(DEFAULT_FORMAT.format((Date) value));
+            } else {
+                //  需要别的类型可自行扩展
+                // 能用toString()直接转string类型的都直接转成string类型
+                cell.setCellValue(value.toString());
+            }
         } catch (NoSuchMethodException e) {
             cell.setCellValue(fieldName);
         } catch (Exception e) {
             logger.error("导出文件数据失败", e);
             //  可替换成自己项目中包装的异常类
             throw new RuntimeException("导出文件失败");
-        }
-    }
-
-    private static void setCellValue(Object value, Cell cell) {
-        if (value == null) {
-            cell.setCellValue("");
-        } else if (value instanceof Date) {
-            cell.setCellValue(DEFAULT_FORMAT.format((Date) value));
-        } else {
-            //  需要别的类型可自行扩展
-            // 能用toString()直接转string类型的都直接转成string类型
-            cell.setCellValue(value.toString());
         }
     }
 
