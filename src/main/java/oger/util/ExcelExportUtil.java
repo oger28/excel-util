@@ -127,10 +127,10 @@ public class ExcelExportUtil {
      * @param dataset
      * @param response
      */
-    public static void exportMergeHeadExcel(String fileName, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, HttpServletResponse response) {
+    public static void export2LevelHeadExcel(String fileName, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(fileName);
-        createMergeHeadTable(0, mergeHeadMap, dataset, sheet, workbook);
+        create2LevelHeadTable(0, mergeHeadMap, dataset, sheet, workbook);
         exportExcel(fileName, workbook, response);
     }
 
@@ -141,10 +141,10 @@ public class ExcelExportUtil {
      * @param dataset
      * @param response
      */
-    public static void exportMergeHeadExcel(String fileName, List<Map<String, Object>> mergeHeads, Collection dataset, HttpServletResponse response) {
+    public static void exportMultiLevelHeadExcel(String fileName, List<Map<String, Object>> mergeHeads, Collection dataset, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(fileName);
-        createMergeHeadTable(0, mergeHeads, dataset, sheet, workbook);
+        createMultiLevelHeadTable(0, mergeHeads, dataset, sheet, workbook);
         exportExcel(fileName, workbook, response);
     }
 
@@ -156,10 +156,10 @@ public class ExcelExportUtil {
      * @param t
      * @param response
      */
-    public static <T> void exportExcel(String fileName, List<Map<String, Integer>> names, T t, HttpServletResponse response) {
+    public static <T> void exportSimpleObjectExcel(String fileName, List<Map<String, Integer>> names, T t, HttpServletResponse response) {
         HSSFWorkbook workbook = new HSSFWorkbook();
         HSSFSheet sheet = workbook.createSheet(fileName);
-        createTable(0, names, t, sheet, workbook);
+        createSimpleObjectTable(0, names, t, sheet, workbook);
         exportExcel(fileName, workbook, response);
     }
 
@@ -176,7 +176,7 @@ public class ExcelExportUtil {
      * @param <T>
      * @return
      */
-    public static <T> int createTable4Object(int line, List<Map<String, Object>> names, T t, Sheet sheet, HSSFWorkbook workbook) {
+    public static <T> int createObjectTable(int line, List<Map<String, Object>> names, T t, Sheet sheet, HSSFWorkbook workbook) {
         int rows = names.size();
         //计算最大列数
         Integer cols = names.stream().map(map -> {
@@ -278,7 +278,7 @@ public class ExcelExportUtil {
      * @param <T>
      * @return
      */
-    public static <T> int createTable(int line, List<Map<String, Integer>> names, T t, Sheet sheet, HSSFWorkbook workbook) {
+    public static <T> int createSimpleObjectTable(int line, List<Map<String, Integer>> names, T t, Sheet sheet, HSSFWorkbook workbook) {
         int rows = names.size();
         //计算最大列数
         Integer cols = names.stream().map(map -> {
@@ -349,7 +349,7 @@ public class ExcelExportUtil {
      * @param workbook
      * @return
      */
-    public static int createMergeHeadTable(int line, List<Map<String, Object>> mergeHeads, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+    public static int createMultiLevelHeadTable(int line, List<Map<String, Object>> mergeHeads, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         CellStyle tableHeadCellStyle = getTableHeadRangeCellStyle(workbook);
         int rows = mergeHeads.size();
         int cols = mergeHeads.get(rows - 1).size();
@@ -428,7 +428,7 @@ public class ExcelExportUtil {
      * @param workbook
      * @return
      */
-    public static int createMergeHeadTable(int line, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
+    public static int create2LevelHeadTable(int line, Map<String, Map<String, String>> mergeHeadMap, Collection dataset, Sheet sheet, HSSFWorkbook workbook) {
         Row row1 = sheet.createRow(line);
         Row row2 = sheet.createRow(line + 1);
         CellStyle tableHeadCellStyle = getTableHeadRangeCellStyle(workbook);

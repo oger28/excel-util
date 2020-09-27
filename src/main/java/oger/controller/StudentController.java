@@ -107,7 +107,7 @@ public class StudentController {
         String fileName = "学生成绩表";
         Map<String, Map<String, String>> mergeHeadMap = getMergeHeadMap();
         List<Student> scores = getScores();
-        ExcelExportUtil.exportMergeHeadExcel(fileName, mergeHeadMap, scores, response);
+        ExcelExportUtil.export2LevelHeadExcel(fileName, mergeHeadMap, scores, response);
     }
 
     /**
@@ -120,7 +120,7 @@ public class StudentController {
         String fileName = "学生成绩表";
         List<Map<String, Object>> mergeHeads = getMergeHeads();
         List<Student> scores = getScores();
-        ExcelExportUtil.exportMergeHeadExcel(fileName, mergeHeads, scores, response);
+        ExcelExportUtil.exportMultiLevelHeadExcel(fileName, mergeHeads, scores, response);
     }
 
     /**
@@ -136,7 +136,7 @@ public class StudentController {
         List<Map<String, Integer>> datas = getObjectCells();
         Student student = new Student(1, "赵日天", new Date(), 100, 100);
         int line = ExcelExportUtil.createTableTitle(0, "成绩单", 6, sheet, workbook);
-        ExcelExportUtil.createTable(line, datas, student, sheet, workbook);
+        ExcelExportUtil.createSimpleObjectTable(line, datas, student, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
@@ -150,7 +150,7 @@ public class StudentController {
         StudentInfo studentInfo = getStudentInfo();
         List<Map<String, Object>> names = getStudents2();
         int line = ExcelExportUtil.createTableTitle(0, "成绩单", 3, sheet, workbook);
-        ExcelExportUtil.createTable4Object(line, names, studentInfo, sheet, workbook);
+        ExcelExportUtil.createObjectTable(line, names, studentInfo, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
