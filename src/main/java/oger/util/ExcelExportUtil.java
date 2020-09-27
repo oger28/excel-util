@@ -167,7 +167,9 @@ public class ExcelExportUtil {
      * 创建表格： 有集合属性字段的复杂对象
      *
      * @param line
-     * @param names
+     * @param names：每一行对应一个Map；单元格值为常量时key为此常量,value为合并单元格数量；
+     *             单元格值为变量时key为T的非集合字段名，value为合并单元格数量；
+     *             当该行以下为集合时，key为T的集合字段名，value为集合元素要显示的字段列表
      * @param t
      * @param sheet
      * @param workbook
@@ -270,7 +272,7 @@ public class ExcelExportUtil {
      * 创建表格： 无集合属性字段的简单对象
      *
      * @param line
-     * @param names
+     * @param names：每一行对应一个Map，单元格值为常量时key为此常量,value为合并单元格数量；单元格值为变量时key为T的字段名，value为合并单元格数量
      * @param t
      * @param sheet
      * @param <T>
