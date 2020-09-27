@@ -229,11 +229,7 @@ public class ExcelExportUtil {
                         index += value;
                         continue;
                     }
-                    if (values.containsKey(key)) {
-                        setCellValue(values.get(key), row.getCell(index));
-                    } else {
-                        row.getCell(index).setCellValue(key);
-                    }
+                    setCellValue(values.get(key) == null ? key : values.get(key), row.getCell(index));
                     //合并单元格
                     int lastRow = i;
                     while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
@@ -259,7 +255,7 @@ public class ExcelExportUtil {
                 }
             }
         }
-        return line + 2;
+        return ++line;
     }
 
     /**
@@ -301,7 +297,7 @@ public class ExcelExportUtil {
         CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
         //创建表
         for (int i = 0; i < rows; i++) {
-            Row row = sheet.createRow(line + i);
+            Row row = sheet.createRow(line++);
             Map<String, Integer> nameMap = names.get(i);
             int index = 0;
             for (Map.Entry<String, Integer> entry : nameMap.entrySet()) {
@@ -324,13 +320,13 @@ public class ExcelExportUtil {
                     lastRow++;
                 }
                 if (lastRow > i || value > 1) {
-                    sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                    sheet.addMergedRegion(new CellRangeAddress(line - 1, line + lastRow - i - 1, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
                     row.getCell(index).setCellStyle(tableBodyRangeCellStyle);
                 }
                 index += value;
             }
         }
-        return line + rows + 2;
+        return ++line;
     }
 
     /**
@@ -371,7 +367,7 @@ public class ExcelExportUtil {
         }
         //创建表头
         for (int i = 0; i < rows; i++) {
-            Row row = sheet.createRow(line + i);
+            Row row = sheet.createRow(line++);
             Map<String, Object> mergeHeadMap = mergeHeads.get(i);
             int index = 0;
             for (Map.Entry<String, Object> entry : mergeHeadMap.entrySet()) {
@@ -399,7 +395,7 @@ public class ExcelExportUtil {
                         lastRow++;
                     }
                     if (lastRow > i || value > 1) {
-                        sheet.addMergedRegion(new CellRangeAddress(line + i, line + lastRow, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                        sheet.addMergedRegion(new CellRangeAddress(line - 1, line + lastRow - i - 1, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
                     }
                     index += value;
                 } else {
@@ -409,7 +405,7 @@ public class ExcelExportUtil {
             }
         }
         //创建表体
-        return createTableBody(line + rows, fieldNames, dataset, sheet, workbook);
+        return createTableBody(line, fieldNames, dataset, sheet, workbook);
     }
 
     /**
