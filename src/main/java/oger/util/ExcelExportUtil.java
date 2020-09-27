@@ -164,7 +164,7 @@ public class ExcelExportUtil {
     }
 
     /**
-     * 创建表格： 有集合属性字段的复杂对象
+     * 创建表格： 有集合属性字段的复杂对象(Map)
      *
      * @param line
      * @param names
@@ -173,7 +173,7 @@ public class ExcelExportUtil {
      * @param workbook
      * @return
      */
-    public static int createTable(int line, List<Map<String, Object>> names, Map<String, Object> values, Sheet sheet, HSSFWorkbook workbook) {
+    public static int createTable4Map(int line, List<Map<String, Object>> names, Map<String, Object> values, Sheet sheet, HSSFWorkbook workbook) {
         int rows = names.size();
         //计算最大列数
         Integer cols = names.stream().map(map -> {
@@ -251,6 +251,107 @@ public class ExcelExportUtil {
                         for (int m = 0; m < fieldNames.size(); m++) {
                             setCellValue(fieldNames.get(m), rowData, row.createCell(m), tableBodyCellStyle);
                         }
+                    }
+                }
+            }
+        }
+        return ++line;
+    }
+
+    /**
+     * 创建表格： 有集合属性字段的复杂对象(Object)
+     *
+     * @param line
+     * @param names
+     * @param sheet
+     * @param workbook
+     * @return
+     */
+    public static <T> int createTable4Object(int line, List<Map<String, Object>> names, T t, Sheet sheet, HSSFWorkbook workbook) {
+        int rows = names.size();
+        //计算最大列数
+        Integer cols = names.stream().map(map -> {
+            int sum = 0;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                Object value = entry.getValue();
+                if (value instanceof Integer) {
+                    sum += (Integer) value;
+                } else if (value instanceof List) {
+                    List<String> fieldNames = (List<String>) value;
+                    sum = fieldNames.size();
+                }
+            }
+            return sum;
+        }).max(Integer::compareTo).get();
+        //创建二维数组
+        String[][] cells = new String[rows][cols];
+        for (int i = 0; i < rows; i++) {
+            cells[i] = new String[cols];
+            Map<String, Object> nameMap = names.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : nameMap.entrySet()) {
+                if (entry.getValue() instanceof Integer) {
+                    Integer value = (Integer) entry.getValue();
+                    while (value > 0) {
+                        cells[i][index] = entry.getKey();
+                        value--;
+                        index++;
+                    }
+                }
+            }
+        }
+        CellStyle tableBodyRangeCellStyle = getTableBodyRangeCellStyle(workbook);
+        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);
+        Row row;
+        //创建表
+        for (int i = 0; i < rows; i++) {
+            row = sheet.createRow(line++);
+            Map<String, Object> nameMap = names.get(i);
+            int index = 0;
+            for (Map.Entry<String, Object> entry : nameMap.entrySet()) {
+                String key = entry.getKey();
+                if (entry.getValue() instanceof Integer) {  //非集合
+                    //创建单元格
+                    Integer value = (Integer) entry.getValue();
+                    int v = 0;
+                    while (v < value) {
+                        row.createCell(index + v).setCellStyle(tableBodyCellStyle);
+                        v++;
+                    }
+                    //赋值
+                    if (i > 0 && StringUtils.equals(cells[i - 1][index], cells[i][index])) {
+                        index += value;
+                        continue;
+                    }
+                    setCellValue(key, t, row.getCell(index), tableBodyCellStyle);
+                    //合并单元格
+                    int lastRow = i;
+                    while (lastRow < rows - 1 && StringUtils.equals(cells[lastRow][index], cells[lastRow + 1][index])) {
+                        lastRow++;
+                    }
+                    if (lastRow > i || value > 1) {
+                        sheet.addMergedRegion(new CellRangeAddress(line - 1, line + lastRow - i - 1, index, index + value - 1));//起始行号，终止行号， 起始列号，终止列号
+                        row.getCell(index).setCellStyle(tableBodyRangeCellStyle);
+                    }
+                    index += value;
+                } else if (entry.getValue() instanceof List) {  //集合
+                    List<String> fieldNames = (List<String>) entry.getValue();
+                    try {
+                        String getMethodName = "get" + key.substring(0, 1).toUpperCase() + key.substring(1);
+                        List dataset = (List) t.getClass().getMethod(getMethodName).invoke(t);
+                        for (int n = 0; n < dataset.size(); n++) {
+                            Object rowData = dataset.get(n);
+                            if (n > 0) {
+                                row = sheet.createRow(line++);
+                            }
+                            for (int m = 0; m < fieldNames.size(); m++) {
+                                setCellValue(fieldNames.get(m), rowData, row.createCell(m), tableBodyCellStyle);
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.error("导出文件数据失败", e);
+                        //  可替换成自己项目中包装的异常类
+                        throw new RuntimeException("导出文件失败");
                     }
                 }
             }
@@ -592,10 +693,10 @@ public class ExcelExportUtil {
         return line + 2;
     }
 
-    private static void setCellValue(String fieldName, Object rowData, Cell cell, CellStyle cellStyle) {
+    private static void setCellValue(String fieldName, Object obj, Cell cell, CellStyle cellStyle) {
         String getMethodName = "get" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
         try {
-            Object value = rowData.getClass().getMethod(getMethodName).invoke(rowData);
+            Object value = obj.getClass().getMethod(getMethodName).invoke(obj);
             cell.setCellStyle(cellStyle);
             setCellValue(value, cell);
         } catch (NoSuchMethodException e) {
