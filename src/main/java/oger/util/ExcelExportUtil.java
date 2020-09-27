@@ -572,7 +572,7 @@ public class ExcelExportUtil {
         Object rowData;
         Row row;
         int length;
-        int[] headLens = new int[fieldNames.length];
+        int[] colLens = new int[fieldNames.length];
 //        CellStyle tableBodyCellStyle = getTableBodyCellStyle(workbook);   //表体需要设置边框时可传入setCellValue方法
         while (it.hasNext()) {
             row = sheet.createRow(line++);
@@ -580,12 +580,12 @@ public class ExcelExportUtil {
             for (int i = 0; i < fieldNames.length; i++) {
                 setCellValue(fieldNames[i], rowData, row.createCell(i), null);
                 length = row.getCell(i).getStringCellValue().getBytes().length;
-                headLens[i] = length > headLens[i] ? length : headLens[i];
+                colLens[i] = length > colLens[i] ? length : colLens[i];
             }
         }
         // 根据数据自动设置列宽
-        for (int i = 0, len = headLens.length; i < len; i++) {
-            length = headLens[i];
+        for (int i = 0, len = colLens.length; i < len; i++) {
+            length = colLens[i];
             length = length < DEFAULT_COL_WIDTH ? DEFAULT_COL_WIDTH : length;
             sheet.setColumnWidth(i, length * 256);
         }
