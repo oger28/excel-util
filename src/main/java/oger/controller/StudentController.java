@@ -3,6 +3,7 @@ package oger.controller;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import oger.entity.Student;
+import oger.entity.StudentInfo;
 import oger.entity.Teacher;
 import oger.util.ExcelExportUtil;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -146,18 +147,18 @@ public class StudentController {
         String fileName = "学生成绩信息表";
         HSSFWorkbook workbook = new HSSFWorkbook();
         Sheet sheet = workbook.createSheet(fileName);
-        Map<String, Object> students = getStudents2();
-        List<Map<String, Object>> names = getStudentInfo();
+        StudentInfo studentInfo = getStudentInfo();
+        List<Map<String, Object>> names = getStudents2();
         int line = ExcelExportUtil.createTableTitle(0, "成绩单", 3, sheet, workbook);
-        ExcelExportUtil.createTable(line, names, students, sheet, workbook);
+        ExcelExportUtil.createTable4Object(line, names, studentInfo, sheet, workbook);
         ExcelExportUtil.exportExcel(fileName, workbook, response);
     }
 
-    private List<Map<String, Object>> getStudentInfo() {
+    private List<Map<String, Object>> getStudents2() {
         List<Map<String, Object>> list = new ArrayList<>();
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("班级", 1);
-        map.put("class", 2);
+        map.put("classes", 2);
         list.add(map);
 
         map = new LinkedHashMap<>();
@@ -176,7 +177,7 @@ public class StudentController {
         filedNames.add("id");
         filedNames.add("name");
         filedNames.add("chineseScore");
-        map.put("students", filedNames);
+        map.put("scores", filedNames);
         list.add(map);
 
         map = new LinkedHashMap<>();
@@ -203,7 +204,7 @@ public class StudentController {
         filedNames.add("id");
         filedNames.add("name");
         filedNames.add("mathScore");
-        map.put("students", filedNames);
+        map.put("scores", filedNames);
         list.add(map);
 
         map = new LinkedHashMap<>();
@@ -223,17 +224,17 @@ public class StudentController {
         return list;
     }
 
-    private Map<String, Object> getStudents2() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("class", "奥数班");
+    private StudentInfo getStudentInfo() {
+        StudentInfo studentInfo = new StudentInfo();
+        studentInfo.setClasses("奥数班");
         List<Student> scores = getScores();
-        map.put("students", scores);
+        studentInfo.setScores(scores);
         int totalChineseScore = scores.stream().mapToInt(Student::getChineseScore).sum();
-        map.put("totalChineseScore", totalChineseScore);
+        studentInfo.setTotalChineseScore(totalChineseScore);
         int totalMathScore = scores.stream().mapToInt(Student::getMathScore).sum();
-        map.put("totalMathScore", totalMathScore);
-        map.put("totalScore", totalMathScore + totalChineseScore);
-        return map;
+        studentInfo.setTotalMathScore(totalMathScore);
+        studentInfo.setTotalScore(totalMathScore + totalChineseScore);
+        return studentInfo;
     }
 
     private List<Map<String, Integer>> getObjectCells() {
